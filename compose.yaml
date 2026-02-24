@@ -1,0 +1,45 @@
+services:
+  # frontend:
+  #   container_name: animashki-frontend
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "${FRONTEND_PORT}:80"
+  #   environment:
+  #     FRONTEND_PORT: ${FRONTEND_PORT}
+  #     VITE_API_URL: ${API_URL}
+  #   restart: unless-stopped
+  #   networks:
+  #     - proxy
+
+  postgres:
+    container_name: anim-crm-pg
+    image: postgres
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+      PG_PORT: ${DB_PORT}
+      restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      # - postgres-migrations:/migrations
+    restart: unless-stopped
+    networks:
+      - proxy
+
+volumes:
+  postgres-data:
+  # postgres-migrations:
+  #   driver: local
+  #   driver_opts:
+  #     o: bind
+  #     type: none
+  #     device: ./backend/migrations
+
+networks:
+  proxy:
+    name: proxy

@@ -1,0 +1,289 @@
+package transport
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/madeinheaven91/anim-crm-api/internal/domains/account"
+	"github.com/madeinheaven91/anim-crm-api/internal/models"
+	"github.com/madeinheaven91/anim-crm-api/internal/shared"
+	"github.com/madeinheaven91/anim-crm-api/internal/shared/errors"
+)
+
+type Handler struct {
+	accUC  account.AccountUsecase
+	authUC account.AuthUsecase
+}
+
+func NewHandler(acc account.AccountUsecase, auth account.AuthUsecase) Handler {
+	return Handler{accUC: acc, authUC: auth}
+}
+
+func (h Handler) SetupRouter(r *gin.RouterGroup) {
+	r.POST("/login", h.Login)
+	r.GET("/logout", h.Logout)
+	r.GET("/refresh", h.Refresh)
+
+	// Account CRUD
+	auth := r.Group("")
+	auth.Use(h.AuthMW)
+	admin := auth.Group("")
+	admin.Use(h.CheckRoleMW("admin"))
+
+	// Invariant
+	auth.GET("/me", h.Me)
+	auth.POST("/changepass", h.ChangeMyPass)
+
+	// Manager and root
+	auth.GET("/accounts", h.GetAllAccounts)
+	auth.GET("/accounts/:login", h.GetAccount)
+	auth.DELETE("/accounts/:login", h.DeleteAccount)
+	admin.POST("/accounts", h.AddAccount)
+	admin.POST("/changepass/:login", h.ChangePass)
+}
+
+func (h Handler) Login(c *gin.Context) {
+	// Bind json
+	var form models.LoginForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.AbortWithStatusJSON(401, err.Error())
+		return
+	}
+
+	// Check if credentials are right and if so create a new session
+	session, err := h.authUC.Login(c, form)
+	if err != nil {
+		c.AbortWithStatusJSON(401, err.Error())
+		return
+	}
+
+	// Generate access token
+	accessToken, err := h.authUC.GenerateAccessToken(c.Request.Context(), &session.Account)
+
+	c.SetCookie("REFRESH_TOKEN", session.RefreshToken, 604800, "/", "localhost", false, true)
+	c.JSON(200, gin.H{
+		"access_token": accessToken,
+	})
+}
+
+func (h Handler) Logout(c *gin.Context) {
+	// Get refresh token from cookies
+	token, err := c.Cookie("REFRESH_TOKEN")
+	if err != nil {
+		c.Status(400)
+		return
+	}
+
+	// Delete session with provided token
+	err = h.authUC.Logout(c.Request.Context(), token)
+	if err != nil {
+		c.AbortWithStatusJSON(401, err.Error())
+		return
+	}
+
+	c.Status(204)
+}
+
+func (h Handler) Refresh(c *gin.Context) {
+	// Get refresh token from cookies
+	token, err := c.Cookie("REFRESH_TOKEN")
+	if err != nil {
+		c.Status(400)
+		return
+	}
+
+	// Refresh
+	acc, refr, err := h.authUC.Refresh(c.Request.Context(), token)
+	if err != nil {
+		c.AbortWithStatusJSON(401, err.Error())
+		return
+	}
+
+	c.SetCookie("REFRESH_TOKEN", refr, 604800, "/", "localhost", false, true)
+	c.JSON(200, gin.H{
+		"access_token": acc,
+	})
+}
+
+func (h Handler) AddAccount(c *gin.Context) {
+	cl, _ := c.Get("claims")
+	claims := cl.(*account.CustomClaims)
+
+	// Bind json
+	var form models.AddAccountForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.AbortWithStatusJSON(401, err.Error())
+		return
+	}
+
+	// Employee can't create accounts
+	if (claims.Role == "employee") ||
+		// Manager can only create employees
+		(claims.Role == "manager" && form.Role != "employee") ||
+		// Can't create admin accounts
+		(form.Role == "admin") {
+		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
+		return
+	}
+
+	// Create account
+	acc, err := h.accUC.Create(c.Request.Context(), form)
+	if err != nil {
+		c.AbortWithStatusJSON(401, err.Error())
+		return
+	}
+
+	c.JSON(201, acc)
+}
+
+func (h Handler) DeleteAccount(c *gin.Context) {
+	cl, _ := c.Get("claims")
+	claims := cl.(*account.CustomClaims)
+	login := c.Param("login")
+
+	// Get account by login
+	acc := h.accUC.Get(c.Request.Context(), login)
+	if acc == nil {
+		c.AbortWithStatusJSON(404, errors.NewError(account.AccountNotFound))
+		return
+	}
+
+	// Employee can't delete accounts
+	if (claims.Role == "employee") ||
+		// Manager can only delete employees
+		(claims.Role == "manager" && acc.Role != "employee") ||
+		// Can't delete your own account
+		(claims.Subject == login) {
+		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
+		return
+	}
+
+	// Delete account
+	err := h.accUC.Delete(c.Request.Context(), login)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.Status(204)
+}
+
+func (h Handler) GetAllAccounts(c *gin.Context) {
+	cl, _ := c.Get("claims")
+	claims := cl.(*account.CustomClaims)
+
+	limit, offset := shared.LimitOffset(c)
+
+	// Employee can't view all accounts
+	if claims.Role == "employee" {
+		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
+		return
+	}
+
+	accs := h.accUC.GetAll(c.Request.Context(), limit, offset)
+
+	// Convert to responses
+	res := make([]models.AccountResponse, len(accs))
+	for i, acc := range accs {
+		res[i] = acc.ToResponse()
+	}
+
+	c.JSON(200, res)
+}
+
+func (h Handler) GetAccount(c *gin.Context) {
+	cl, _ := c.Get("claims")
+	claims := cl.(*account.CustomClaims)
+	login := c.Param("login")
+
+	if claims.Subject != login && claims.Role != "admin" {
+		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
+		return
+	}
+
+	// Employee can't view accounts except hiw own
+	if claims.Role == "employee" && claims.Subject != login {
+		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
+		return
+	}
+
+	acc := h.accUC.Get(c.Request.Context(), login)
+	if acc == nil {
+		c.AbortWithStatusJSON(404, errors.NewError(account.AccountNotFound))
+		return
+	}
+
+	c.JSON(200, acc.ToResponse())
+}
+
+func (h Handler) ChangePass(c *gin.Context) {
+	cl, _ := c.Get("claims")
+	claims := cl.(*account.CustomClaims)
+	login := c.Param("login")
+
+	// Bind json
+	var form models.ChangePasswordForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.Error(err)
+		return
+	}
+
+	acc := h.accUC.Get(c.Request.Context(), login)
+	if acc == nil {
+		c.AbortWithStatusJSON(404, errors.NewError(account.AccountNotFound))
+		return
+	}
+
+	// Employee can't change passwords
+	if (claims.Role == "employee") ||
+		// Manager can only change employees password
+		(claims.Role == "manager" && acc.Role != "employee") {
+		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
+		return
+	}
+
+	// Change password
+	err := h.authUC.ChangePassword(c.Request.Context(), login, form)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.Status(201)
+}
+
+func (h Handler) ChangeMyPass(c *gin.Context) {
+	// TODO
+	cl, _ := c.Get("claims")
+	claims := cl.(*account.CustomClaims)
+
+	// Bind json
+	var form models.ChangePasswordForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.Error(err)
+		return
+	}
+
+	acc := h.accUC.Get(c.Request.Context(), claims.Subject)
+	if acc == nil {
+		c.AbortWithStatusJSON(404, errors.NewError(account.AccountNotFound))
+		return
+	}
+
+	// Change password
+	err := h.authUC.ChangePassword(c.Request.Context(), claims.Subject, form)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.Status(201)
+}
+
+func (h Handler) Me(c *gin.Context) {
+	// TODO
+	cl, _ := c.Get("claims")
+	claims := cl.(*account.CustomClaims)
+
+	acc := h.accUC.Get(c.Request.Context(), claims.Subject)
+
+	c.JSON(200, acc.ToResponse())
+}

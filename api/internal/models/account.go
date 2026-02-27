@@ -51,3 +51,6 @@ type AddAccountForm struct {
 	Password string `json:"password" binding:"required"`
 }
 
+func (a *AddAccountForm) ToAccount() *Account {
+	return &Account{Login: a.Login, Role: a.Role, Password: a.Password}
+}

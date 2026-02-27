@@ -3,7 +3,6 @@ package account
 import (
 	"context"
 
-	// "github.com/golang-jwt/jwt/v5"
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 )
 

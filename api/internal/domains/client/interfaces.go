@@ -7,15 +7,18 @@ import (
 )
 
 type ClientRepo interface {
-	GetAllClients(context.Context) []models.Client
-	GetClient(ctx context.Context, id string) *models.Client
-	AddClient(ctx context.Context, client *models.Client) error
-	DeleteClient(ctx context.Context, id string) error
-	UpdateClient(ctx context.Context, client *models.Client) *models.Client
+	Get(ctx context.Context, id string) *models.Client
+	GetAll(ctx context.Context, limit, offset int) []models.Client
+	Add(ctx context.Context, client *models.Client) error
+	Delete(ctx context.Context, id string) error
+	Update(ctx context.Context, client *models.Client) error
 }
 
 type Usecase interface {
-	GetClientShortInfo(ctx context.Context, id string) *models.Client
-	GetClientFullInfo(ctx context.Context, id string) *models.Client
-	GetAllClients(context.Context) []models.Client
+	GetClient(ctx context.Context, id string) *models.Client
+	GetClientFull(ctx context.Context, id string) *models.Client
+	GetAllClients(ctx context.Context, limit, offset int) []models.Client
+    AddClient(ctx context.Context, client *models.AddClientForm) (*models.Client, error)
+    UpdateClient(ctx context.Context, client *models.Client) error
+    DeleteClient(ctx context.Context, id string) error
 }

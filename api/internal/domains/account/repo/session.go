@@ -59,6 +59,9 @@ func (r SessionRepo) DeleteByID(ctx context.Context, id int) error {
 }
 
 func (r SessionRepo) DeleteByRefreshToken(ctx context.Context, token string) error {
-	_, err := gorm.G[models.Session](r.db).Where("refresh_token = ?", token).Delete(ctx)
+	rows, err := gorm.G[models.Session](r.db).Where("refresh_token = ?", token).Delete(ctx)
+	if rows == 0 && err == nil {
+        err = gorm.ErrRecordNotFound
+	}
 	return err
 }

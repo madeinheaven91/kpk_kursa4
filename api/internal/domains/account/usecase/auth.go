@@ -11,22 +11,22 @@ import (
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 )
 
-type Usecase struct {
+type AuthUC struct {
 	accRepo account.AccountRepo
 	sesRepo account.SessionRepo
 
 	secretKey string
 }
 
-func NewUsecase(acc account.AccountRepo, s account.SessionRepo, secretKey string) account.AuthUsecase {
-	return &Usecase{
+func NewAuthUC(acc account.AccountRepo, s account.SessionRepo, secretKey string) account.AuthUsecase {
+	return &AuthUC{
 		accRepo:   acc,
 		sesRepo:   s,
 		secretKey: secretKey,
 	}
 }
 
-func (u Usecase) Login(ctx context.Context, form models.LoginForm) (*models.Session, error) {
+func (u AuthUC) Login(ctx context.Context, form models.LoginForm) (*models.Session, error) {
 	account := u.accRepo.Get(ctx, form.Login)
 	if account == nil {
 		return nil, errors.New("account not found")
@@ -53,11 +53,11 @@ func (u Usecase) Login(ctx context.Context, form models.LoginForm) (*models.Sess
 	return &session, nil
 }
 
-func (u Usecase) Logout(ctx context.Context, refreshToken string) error {
+func (u AuthUC) Logout(ctx context.Context, refreshToken string) error {
 	return u.sesRepo.DeleteByRefreshToken(ctx, refreshToken)
 }
 
-func (u Usecase) Refresh(ctx context.Context, refreshToken string) (string, string, error) {
+func (u AuthUC) Refresh(ctx context.Context, refreshToken string) (string, string, error) {
 	ses := u.sesRepo.GetByRefreshToken(ctx, refreshToken)
 	if ses == nil {
 		return "", "", errors.New("session not found")
@@ -81,7 +81,7 @@ func (u Usecase) Refresh(ctx context.Context, refreshToken string) (string, stri
 	return accessToken, ses.RefreshToken, nil
 }
 
-func (u Usecase) GenerateAccessToken(ctx context.Context, acc *models.Account) (string, error) {
+func (u AuthUC) GenerateAccessToken(ctx context.Context, acc *models.Account) (string, error) {
 	if acc == nil {
 		return "", errors.New("account not found")
 	}
@@ -105,7 +105,7 @@ func (u Usecase) GenerateAccessToken(ctx context.Context, acc *models.Account) (
 	return token.SignedString([]byte(u.secretKey))
 }
 
-func (u Usecase) ValidateAccessToken(tokenString string) (*account.CustomClaims, error) {
+func (u AuthUC) ValidateAccessToken(tokenString string) (*account.CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &account.CustomClaims{}, func(t *jwt.Token) (any, error) {
 		return []byte(u.secretKey), nil
 	})
@@ -124,7 +124,7 @@ func (u Usecase) ValidateAccessToken(tokenString string) (*account.CustomClaims,
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-func (u Usecase) GenerateRefreshToken(ctx context.Context, _account *models.Account) (string, error) {
+func (u AuthUC) GenerateRefreshToken(ctx context.Context, _account *models.Account) (string, error) {
 	b := make([]rune, 32)
 	for i := range b {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
@@ -132,7 +132,7 @@ func (u Usecase) GenerateRefreshToken(ctx context.Context, _account *models.Acco
 	return string(b), nil
 }
 
-func (u Usecase) ChangePassword(ctx context.Context, login string, form models.ChangePasswordForm) error {
+func (u AuthUC) ChangePassword(ctx context.Context, login string, form models.ChangePasswordForm) error {
     acc := u.accRepo.Get(ctx, login)
     if acc == nil {
         return errors.New("account not found")

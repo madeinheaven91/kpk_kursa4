@@ -4,14 +4,18 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	repoAccount "github.com/madeinheaven91/anim-crm-api/internal/domains/account/repo"
-	transportAccount "github.com/madeinheaven91/anim-crm-api/internal/domains/account/transport"
-	usecaseAccount "github.com/madeinheaven91/anim-crm-api/internal/domains/account/usecase"
-	repoClient "github.com/madeinheaven91/anim-crm-api/internal/domains/client/repo"
-	transportClient "github.com/madeinheaven91/anim-crm-api/internal/domains/client/transport"
-	usecaseClient "github.com/madeinheaven91/anim-crm-api/internal/domains/client/usecase"
+	accRepo "github.com/madeinheaven91/anim-crm-api/internal/domains/account/repo"
+	accHTTP "github.com/madeinheaven91/anim-crm-api/internal/domains/account/transport"
+	accUC "github.com/madeinheaven91/anim-crm-api/internal/domains/account/usecase"
+	clientRepo "github.com/madeinheaven91/anim-crm-api/internal/domains/client/repo"
+	clientHTTP "github.com/madeinheaven91/anim-crm-api/internal/domains/client/transport"
+	clientUC "github.com/madeinheaven91/anim-crm-api/internal/domains/client/usecase"
+	empRepo "github.com/madeinheaven91/anim-crm-api/internal/domains/employee/repo"
+	empHTTP "github.com/madeinheaven91/anim-crm-api/internal/domains/employee/transport"
+	empUC "github.com/madeinheaven91/anim-crm-api/internal/domains/employee/usecase"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared/config"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared/database"
+	"github.com/madeinheaven91/anim-crm-api/internal/shared/services"
 	"gorm.io/gorm"
 )
 
@@ -34,24 +38,35 @@ func SetupApp(c config.Config) App {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	authService := services.NewService(c.Server.SecretKey)
+
 	v1 := router.Group("/api/v1")
-	// Set up client routes
+
+
+	// Auth module
 	{
-		repo := repoClient.NewRepo(db)
-		uc := usecaseClient.NewUsecase(repo)
-		rest := transportClient.NewHandler(uc)
-		rest.SetupRouter(v1)
+		accrepo := accRepo.NewAccountRepo(db)
+		sRepo := accRepo.NewSessionRepo(db)
+		authUC := accUC.NewAuthUC(accrepo, sRepo, c.Server.SecretKey)
+        accUC := accUC.NewAccountUC(accrepo)
+		handler := accHTTP.NewHandler(accUC, authUC)
+		handler.SetupRouter(v1, authService)
 	}
 
-	// Set up account routes
+	// Client module
 	{
-		accrepo := repoAccount.NewAccountRepo(db)
-		srepo := repoAccount.NewSessionRepo(db)
-		auth := usecaseAccount.NewUsecase(accrepo, srepo, c.Server.SecretKey)
+		repo := clientRepo.NewRepo(db)
+		uc := clientUC.NewUC(repo)
+		handler := clientHTTP.NewClientHandler(uc)
+		handler.SetupRouter(v1, authService)
+	}
 
-        acc := usecaseAccount.NewAccountUC(accrepo)
-		rest := transportAccount.NewHandler(acc, auth)
-		rest.SetupRouter(v1)
+	// Employee module
+	{
+		repo := empRepo.NewRepo(db)
+		uc := empUC.NewUC(repo)
+		handler := empHTTP.NewEmployeeHandler(uc)
+		handler.SetupRouter(v1, authService)
 	}
 
 	app := App{

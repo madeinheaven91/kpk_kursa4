@@ -6,6 +6,7 @@ import (
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared/errors"
+	"github.com/madeinheaven91/anim-crm-api/internal/shared/services"
 )
 
 type Handler struct {
@@ -17,27 +18,28 @@ func NewHandler(acc account.AccountUsecase, auth account.AuthUsecase) Handler {
 	return Handler{accUC: acc, authUC: auth}
 }
 
-func (h Handler) SetupRouter(r *gin.RouterGroup) {
+func (h Handler) SetupRouter(r *gin.RouterGroup, authService services.AuthService) {
 	r.POST("/login", h.Login)
 	r.GET("/logout", h.Logout)
 	r.GET("/refresh", h.Refresh)
 
 	// Account CRUD
 	auth := r.Group("")
-	auth.Use(h.AuthMW)
-	admin := auth.Group("")
-	admin.Use(h.CheckRoleMW("admin"))
+	auth.Use(authService.Authorized())
 
 	// Invariant
 	auth.GET("/me", h.Me)
 	auth.POST("/changepass", h.ChangeMyPass)
 
-	// Manager and root
-	auth.GET("/accounts", h.GetAllAccounts)
-	auth.GET("/accounts/:login", h.GetAccount)
-	auth.DELETE("/accounts/:login", h.DeleteAccount)
-	admin.POST("/accounts", h.AddAccount)
-	admin.POST("/changepass/:login", h.ChangePass)
+	prot := auth.Group("")
+	prot.Use(authService.RequireRoles("manager", "admin"))
+
+	// Manager and admin
+	prot.GET("/accounts", h.GetAllAccounts)
+	prot.GET("/accounts/:login", h.GetAccount)
+	prot.DELETE("/accounts/:login", h.DeleteAccount)
+	prot.POST("/accounts", h.AddAccount)
+	prot.POST("/changepass/:login", h.ChangePass)
 }
 
 func (h Handler) Login(c *gin.Context) {
@@ -79,6 +81,8 @@ func (h Handler) Logout(c *gin.Context) {
 		return
 	}
 
+	// Clear refresh token cookie
+	c.SetCookie("REFRESH_TOKEN", "", -1, "/", "localhost", false, true)
 	c.Status(204)
 }
 
@@ -114,10 +118,8 @@ func (h Handler) AddAccount(c *gin.Context) {
 		return
 	}
 
-	// Employee can't create accounts
-	if (claims.Role == "employee") ||
-		// Manager can only create employees
-		(claims.Role == "manager" && form.Role != "employee") ||
+	// Manager can only create employees
+	if (claims.Role == "manager" && form.Role != "employee") ||
 		// Can't create admin accounts
 		(form.Role == "admin") {
 		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
@@ -146,10 +148,8 @@ func (h Handler) DeleteAccount(c *gin.Context) {
 		return
 	}
 
-	// Employee can't delete accounts
-	if (claims.Role == "employee") ||
-		// Manager can only delete employees
-		(claims.Role == "manager" && acc.Role != "employee") ||
+	// Manager can only delete employees
+	if (claims.Role == "manager" && acc.Role != "employee") ||
 		// Can't delete your own account
 		(claims.Subject == login) {
 		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
@@ -167,16 +167,7 @@ func (h Handler) DeleteAccount(c *gin.Context) {
 }
 
 func (h Handler) GetAllAccounts(c *gin.Context) {
-	cl, _ := c.Get("claims")
-	claims := cl.(*account.CustomClaims)
-
 	limit, offset := shared.LimitOffset(c)
-
-	// Employee can't view all accounts
-	if claims.Role == "employee" {
-		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
-		return
-	}
 
 	accs := h.accUC.GetAll(c.Request.Context(), limit, offset)
 
@@ -195,12 +186,6 @@ func (h Handler) GetAccount(c *gin.Context) {
 	login := c.Param("login")
 
 	if claims.Subject != login && claims.Role != "admin" {
-		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
-		return
-	}
-
-	// Employee can't view accounts except hiw own
-	if claims.Role == "employee" && claims.Subject != login {
 		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
 		return
 	}
@@ -232,10 +217,8 @@ func (h Handler) ChangePass(c *gin.Context) {
 		return
 	}
 
-	// Employee can't change passwords
-	if (claims.Role == "employee") ||
-		// Manager can only change employees password
-		(claims.Role == "manager" && acc.Role != "employee") {
+	// Manager can only change employees password
+	if claims.Role == "manager" && acc.Role != "employee" {
 		c.AbortWithStatusJSON(403, errors.NewError(account.ForbiddenError))
 		return
 	}
@@ -251,7 +234,6 @@ func (h Handler) ChangePass(c *gin.Context) {
 }
 
 func (h Handler) ChangeMyPass(c *gin.Context) {
-	// TODO
 	cl, _ := c.Get("claims")
 	claims := cl.(*account.CustomClaims)
 
@@ -279,7 +261,6 @@ func (h Handler) ChangeMyPass(c *gin.Context) {
 }
 
 func (h Handler) Me(c *gin.Context) {
-	// TODO
 	cl, _ := c.Get("claims")
 	claims := cl.(*account.CustomClaims)
 

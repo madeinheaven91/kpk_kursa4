@@ -8,36 +8,36 @@ import (
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 )
 
-type Account struct {
+type AccountUC struct {
 	repo repo.AccountRepo
 }
 
 func NewAccountUC(repo repo.AccountRepo) account.AccountUsecase {
-	return Account{repo}
+	return AccountUC{repo}
 }
 
-func (a Account) GetAll(ctx context.Context, limit, offset int) []models.Account {
+func (a AccountUC) GetAll(ctx context.Context, limit, offset int) []models.Account {
     return a.repo.GetAll(ctx, limit, offset)
 }
 
-func (a Account) Get(ctx context.Context, login string) *models.Account {
+func (a AccountUC) Get(ctx context.Context, login string) *models.Account {
     return a.repo.Get(ctx, login)
 }
 
-func (a Account) Create(ctx context.Context, form models.AddAccountForm) (*models.Account, error) {
-	acc := models.Account{Login: form.Login, Role: form.Role}
+func (a AccountUC) Create(ctx context.Context, form models.AddAccountForm) (*models.Account, error) {
+	acc := form.ToAccount()
 	acc.ChangePassword(form.Password)
-	err := a.repo.Add(ctx, &acc)
+	err := a.repo.Add(ctx, acc)
 	if err != nil {
 		return nil, err
 	}
-	return &acc, nil
+	return acc, nil
 }
 
-func (a Account) Delete(ctx context.Context, login string) error {
+func (a AccountUC) Delete(ctx context.Context, login string) error {
     return a.repo.Delete(ctx, login)
 }
 
-func (a Account) Update(ctx context.Context, account *models.Account) error {
+func (a AccountUC) Update(ctx context.Context, account *models.Account) error {
     return a.repo.Update(ctx, account)
 }

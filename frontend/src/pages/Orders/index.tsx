@@ -1,0 +1,324 @@
+import { SearchCombobox } from "@/components/search-combobox";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import type { Client } from "@/lib/api/clients";
+import { OrdersToRepr, StatusClass } from "@/lib/api/orders";
+import { ApiRoutes } from "@/lib/routes";
+import axios from "axios";
+import {
+	Loader2,
+	PencilIcon,
+	PlusIcon,
+	SaveIcon,
+	TrashIcon,
+	XIcon
+} from "lucide-react";
+import React, { useEffect } from "react";
+import { DateTimePicker, DeleteDialog, EmployeeRolesEditor, FilterBar, OrdersTable } from "./components";
+import { useOrderMutations, useOrders } from "./hooks";
+import type { EmployeeRole } from "@/lib/api/employees";
+
+function OrdersPage() {
+	const {
+		orders,
+		total,
+		error,
+		loading,
+		page,
+		setPage,
+		filter,
+		fetchOrders,
+		handleApplyFilter,
+		handleClearFilter,
+		pageTotal,
+	} = useOrders();
+
+	const {
+		selectedOrder,
+		editedOrder,
+		newOrder,
+		isEditing,
+		isAdding,
+		isDeleting,
+		isSaving,
+		isDeleteDialogOpen,
+		setIsDeleteDialogOpen,
+		handleSelectOrder,
+		handleFieldChange,
+		handleEdit,
+		handleAdd,
+		handleCancel,
+		handleSave,
+		handleDelete,
+	} = useOrderMutations(fetchOrders);
+
+	useEffect(() => {
+		fetchOrders();
+	}, [page]);
+
+	// Helpers
+	const repr = selectedOrder ? OrdersToRepr([selectedOrder])[0] : null;
+
+	return (
+		<section className='h-screen p-4'>
+			<h1 className='text-4xl py-5'>Заказы</h1>
+			<div className='grid grid-cols-2 gap-10'>
+
+				{/* ── Left: table + filters ── */}
+				<div className='flex flex-col gap-5'>
+					<div className='flex flex-row gap-5 items-center justify-between'>
+						<FilterBar filter={filter} onApply={handleApplyFilter} onClear={handleClearFilter} />
+						<Button onClick={handleAdd}><PlusIcon /> Добавить</Button>
+					</div>
+					<div className='border-1 border-text shadow-md rounded-lg'>
+						{loading ? (
+							<div className="flex justify-center items-center p-20">
+								<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto" />
+							</div>
+						) : error ? (
+							<p>Ошибка загрузки заказов: {error}</p>
+						) : (
+							<OrdersTable
+								orders={orders}
+								selectedOrder={selectedOrder}
+								handleSelectOrder={handleSelectOrder}
+								page={page}
+								totalPages={pageTotal}
+								total={total}
+								onPageChange={setPage}
+							/>
+						)}
+					</div>
+				</div>
+
+				{/* ── Right: detail / add panel ── */}
+				<div className={`flex flex-col justify-between rounded-lg p-4 ${selectedOrder || isAdding ? 'border-1 border-text shadow-md' : ''}`}>
+
+					{/* ── View / Edit selected order ── */}
+					{selectedOrder && repr && (
+						<>
+							<div>
+								<div className='flex gap-5 justify-between'>
+									<div className='flex gap-2 flex-wrap'>
+										<h2 className='text-2xl mb-10'>{isEditing ? "Редактирование" : "Информация о заказе"}</h2>
+										{!isEditing && (
+											<Button variant="outline" onClick={handleEdit}><PencilIcon />Редактировать</Button>
+										)}
+										{isEditing && (
+											<>
+												<Button variant='outline' onClick={handleCancel}><XIcon />Отмена</Button>
+												<Button onClick={handleSave} disabled={isSaving}>
+													{isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SaveIcon className="mr-2 h-4 w-4" />}
+													Сохранить
+												</Button>
+											</>
+										)}
+										<Button variant='destructive' onClick={() => setIsDeleteDialogOpen(true)}><TrashIcon /> Удалить</Button>
+									</div>
+									<Button variant='ghost' onClick={() => handleSelectOrder(null)}><XIcon /></Button>
+								</div>
+
+								{/* Order number + status badge */}
+								<div className='flex items-center gap-3 mb-1'>
+									<h2 className='text-3xl font-bold'>Заказ №{selectedOrder.id}</h2>
+									<span className={`text-sm px-2 py-0.5 rounded-full border ${repr.status === 'ongoing' ? 'bg-accent/80 text-background border-accent' :
+										repr.status === 'done' ? 'opacity-50 border-muted-foreground' :
+											'border-muted-foreground'
+										}`}>
+										{{ upcoming: 'Предстоит', ongoing: 'В процессе', done: 'Завершён' }[repr.status]}
+									</span>
+								</div>
+								<p className='text-sm opacity-50 mb-4'>ID: {selectedOrder.id}</p>
+
+								{/* Datetime */}
+								<div className='mb-3'>
+									<p className='text-sm opacity-60 mb-1'>Дата и время</p>
+									{isEditing ? (
+										<Input
+											type='datetime-local'
+											value={typeof editedOrder.datetime === 'string' ? editedOrder.datetime.replace(' ', 'T').slice(0, 16) : ''}
+											onChange={e => handleFieldChange('datetime', e.target.value)}
+											className='md:text-xl py-5'
+										/>
+									) : (
+										<p className={`text-2xl ${StatusClass(repr.status)}`}>{repr.date} в {repr.time}</p>
+									)}
+								</div>
+
+								{/* Duration */}
+								<div className='mb-3'>
+									<p className='text-sm opacity-60 mb-1'>Длительность (ч.)</p>
+									{isEditing ? (
+										<Input
+											type='number'
+											min={1}
+											value={(editedOrder as { duration?: number }).duration ?? ''}
+											onChange={e => handleFieldChange('duration', e.target.value ? Number(e.target.value) : undefined)}
+											className='md:text-xl py-5 w-32'
+										/>
+									) : (
+										<p className={`text-xl ${StatusClass(repr.status)}`}>{repr.duration}</p>
+									)}
+								</div>
+
+								<Separator className='my-4' />
+
+								{/* Client */}
+								<div className='mb-3'>
+									<p className='text-sm opacity-60 mb-1'>Клиент</p>
+									{isEditing ? (
+										<Input
+											placeholder="UUID клиента"
+											value={(editedOrder as { client_id?: string }).client_id || selectedOrder.client?.id || ''}
+											onChange={e => handleFieldChange('client_id', e.target.value)}
+											className='md:text-xl py-5'
+										/>
+									) : (
+										<>
+											<p className='text-xl'>{selectedOrder.client?.name || <span className='opacity-50'>Не указан</span>}</p>
+											{selectedOrder.client && <p className='text-sm opacity-50'>{selectedOrder.client.phone}</p>}
+										</>
+									)}
+								</div>
+
+								{/* Address */}
+								<div className='mb-3'>
+									<p className='text-sm opacity-60 mb-1'>Адрес</p>
+									{isEditing ? (
+										<Input
+											value={(editedOrder as { address?: string }).address || ''}
+											onChange={e => handleFieldChange('address', e.target.value)}
+											placeholder="Адрес"
+											className='md:text-xl py-5'
+										/>
+									) : (
+										<p className={`text-xl ${StatusClass(repr.status)}`}>{selectedOrder.address}</p>
+									)}
+								</div>
+
+								<Separator className='my-4' />
+
+								{/* Employees */}
+								<div className='mb-3'>
+									<p className='text-sm opacity-60 mb-2'>Сотрудники</p>
+									{isEditing ? (
+										<EmployeeRolesEditor
+											employees={(editedOrder as { employees?: { id: string; role: string }[] }).employees || []}
+											onChange={v => handleFieldChange('employees', v)}
+										/>
+									) : (
+										selectedOrder.employees && selectedOrder.employees.length > 0 ? (
+											<ul className='flex flex-col gap-1'>
+												{selectedOrder.employees.map((er: EmployeeRole, i: number) => (
+													<li key={i} className='flex gap-2 text-lg'>
+														<span>{er.name}</span>
+														<span className='opacity-50'>— {er.role}</span>
+													</li>
+												))}
+											</ul>
+										) : (
+											<p className='opacity-50'>Нет сотрудников</p>
+										)
+									)}
+								</div>
+							</div>
+						</>
+					)}
+
+					{/* ── Add new order ── */}
+					{isAdding && (
+						<>
+							<div>
+								<div className='flex gap-5 mb-10'>
+									<h2 className='text-2xl'>Добавление заказа</h2>
+									<Button variant='destructive' onClick={handleCancel}><XIcon />Отмена</Button>
+								</div>
+								<div className='flex flex-col gap-5'>
+									<Field>
+										<FieldLabel className='text-xl'>
+											Клиент <span className='text-red-500'>*</span>
+										</FieldLabel>
+										<SearchCombobox<Client>
+											placeholder="Начните вводить имя клиента..."
+											onSearch={async (query) => {
+												const resp = await axios.get(ApiRoutes.getClientsURL(), {
+													params: { name: query, limit: 10 },
+													withCredentials: true,
+												});
+												return resp.data.clients;
+											}}
+											renderOption={(client: Client) => (
+													<span>{client.name}</span>
+											)}
+											getLabel={(client: Client) => client.name}
+											onSelect={(client: Client) => handleFieldChange('client_id', client?.id ?? '')}
+										/>
+									</Field>
+									<Field>
+										<FieldLabel className='text-xl'>
+											Дата и время <span className='text-red-500'>*</span>
+										</FieldLabel>
+										<DateTimePicker
+											value={newOrder.datetime || ''}
+											onChange={v => handleFieldChange('datetime', v)}
+										/>
+									</Field>
+									<Field>
+										<FieldLabel className='text-xl'>Длительность (ч.)</FieldLabel>
+										<Input
+											type='number'
+											min={1}
+											value={newOrder.duration ?? ''}
+											onChange={e => handleFieldChange('duration', e.target.value ? Number(e.target.value) : undefined)}
+											placeholder="Часов"
+											className='md:text-xl py-6 w-32'
+										/>
+									</Field>
+									<Field>
+										<FieldLabel className='text-xl'>
+											Адрес <span className='text-red-500'>*</span>
+										</FieldLabel>
+										<Input
+											required
+											value={newOrder.address || ''}
+											onChange={e => handleFieldChange('address', e.target.value)}
+											placeholder="Адрес"
+											className='md:text-xl py-6'
+										/>
+									</Field>
+									<Field>
+										<FieldLabel className='text-xl'>
+											Сотрудники <span className='text-red-500'>*</span>
+										</FieldLabel>
+										<EmployeeRolesEditor
+											employees={newOrder.employees || []}
+											onChange={v => handleFieldChange('employees', v)}
+										/>
+									</Field>
+								</div>
+							</div>
+							<div className='flex gap-2 h-fit mt-6'>
+								<Button onClick={handleSave} disabled={isSaving}>
+									{isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SaveIcon className="mr-2 h-4 w-4" />}
+									Сохранить
+								</Button>
+							</div>
+						</>
+					)}
+				</div>
+			</div>
+
+			<DeleteDialog
+				isDeleteDialogOpen={isDeleteDialogOpen}
+				setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+				isDeleting={isDeleting}
+				handleDelete={handleDelete}
+				selectedOrder={selectedOrder}
+			/>
+		</section>
+	);
+}
+
+export const Component = React.memo(OrdersPage);

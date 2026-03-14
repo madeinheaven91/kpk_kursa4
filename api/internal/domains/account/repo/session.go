@@ -48,7 +48,7 @@ func (r SessionRepo) Add(ctx context.Context, session *models.Session) error {
 func (r SessionRepo) Update(ctx context.Context, session *models.Session) error {
 	_, err := gorm.G[models.Session](r.db).Where("id = ?", session.ID).Updates(ctx, models.Session{
         RefreshToken: session.RefreshToken,
-        Expires_At: time.Now().Add(time.Hour * 24 * 7),
+        Expires_At: models.JsonTime(time.Now().Add(time.Hour * 24 * 7)),
 	})
 	return err
 }

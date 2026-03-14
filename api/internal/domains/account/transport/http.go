@@ -10,11 +10,11 @@ import (
 )
 
 type Handler struct {
-	accUC  account.AccountUsecase
-	authUC account.AuthUsecase
+	accUC  account.AccountUC
+	authUC account.AuthUC
 }
 
-func NewHandler(acc account.AccountUsecase, auth account.AuthUsecase) Handler {
+func NewHandler(acc account.AccountUC, auth account.AuthUC) Handler {
 	return Handler{accUC: acc, authUC: auth}
 }
 
@@ -60,9 +60,10 @@ func (h Handler) Login(c *gin.Context) {
 	// Generate access token
 	accessToken, err := h.authUC.GenerateAccessToken(c.Request.Context(), &session.Account)
 
-	c.SetCookie("REFRESH_TOKEN", session.RefreshToken, 604800, "/", "localhost", false, true)
+	c.SetCookie("REFRESH_TOKEN", session.RefreshToken, 604800, "/api", "localhost", false, true)
+	c.SetCookie("ACCESS_TOKEN", accessToken, 3600, "/api", "localhost", false, true)
 	c.JSON(200, gin.H{
-		"access_token": accessToken,
+		"account": session.Account,
 	})
 }
 
@@ -82,7 +83,8 @@ func (h Handler) Logout(c *gin.Context) {
 	}
 
 	// Clear refresh token cookie
-	c.SetCookie("REFRESH_TOKEN", "", -1, "/", "localhost", false, true)
+	c.SetCookie("REFRESH_TOKEN", "", -1, "/api", "localhost", false, true)
+	c.SetCookie("ACCESS_TOKEN", "", -1, "/api", "localhost", false, true)
 	c.Status(204)
 }
 
@@ -101,10 +103,9 @@ func (h Handler) Refresh(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("REFRESH_TOKEN", refr, 604800, "/", "localhost", false, true)
-	c.JSON(200, gin.H{
-		"access_token": acc,
-	})
+	c.SetCookie("REFRESH_TOKEN", refr, 604800, "/api", "localhost", false, true)
+	c.SetCookie("ACCESS_TOKEN", acc, 3600, "/api", "localhost", false, true)
+	c.Status(204)
 }
 
 func (h Handler) AddAccount(c *gin.Context) {
@@ -167,9 +168,16 @@ func (h Handler) DeleteAccount(c *gin.Context) {
 }
 
 func (h Handler) GetAllAccounts(c *gin.Context) {
-	limit, offset := shared.LimitOffset(c)
+	limit, offset, _ := shared.LimitOffsetSearch(c)
+	filter := account.FilterParams{}
+	filter.Login = c.Query("login")
 
-	accs := h.accUC.GetAll(c.Request.Context(), limit, offset)
+	accs := h.accUC.GetAll(c.Request.Context(), limit, offset, filter)
+	total, err := h.accUC.GetTotal(c.Request.Context(), filter)
+	if err != nil {
+		c.AbortWithStatusJSON(500, err.Error())
+		return
+	}
 
 	// Convert to responses
 	res := make([]models.AccountResponse, len(accs))
@@ -177,7 +185,7 @@ func (h Handler) GetAllAccounts(c *gin.Context) {
 		res[i] = acc.ToResponse()
 	}
 
-	c.JSON(200, res)
+	c.JSON(200, gin.H{"total": total, "accounts": res})
 }
 
 func (h Handler) GetAccount(c *gin.Context) {

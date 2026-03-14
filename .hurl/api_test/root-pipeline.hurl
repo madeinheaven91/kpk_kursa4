@@ -6,7 +6,7 @@ POST http://localhost:3000/api/v1/login
 }
 HTTP 200
 [Captures]
-access: jsonpath "$['access_token']"
+access: cookie "ACCESS_TOKEN"
 refresh: cookie "REFRESH_TOKEN"
 
 ### POST ACCOUNT

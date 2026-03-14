@@ -2,7 +2,6 @@ package transport
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/madeinheaven91/anim-crm-api/internal/domains/account"
 	employee "github.com/madeinheaven91/anim-crm-api/internal/domains/employee"
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared"
@@ -11,10 +10,10 @@ import (
 )
 
 type Handler struct {
-	empUC employee.EmployeeUC
+	empUC employee.UC
 }
 
-func NewEmployeeHandler(empUC employee.EmployeeUC) Handler {
+func NewHandler(empUC employee.UC) Handler {
 	return Handler{
 		empUC: empUC,
 	}
@@ -29,7 +28,7 @@ func (h Handler) SetupRouter(r *gin.RouterGroup, authService services.AuthServic
 	auth.GET("/employees", h.GetAllEmployees)
 	auth.GET("/employees/:id", h.GetEmployeeFull)
 	auth.GET("/employees/:id/short", h.GetEmployee)
-	
+
 	// Manager and admin only operations
 	prot := auth.Group("")
 	prot.Use(authService.RequireRoles("manager", "admin"))
@@ -39,34 +38,41 @@ func (h Handler) SetupRouter(r *gin.RouterGroup, authService services.AuthServic
 }
 
 func (h Handler) GetAllEmployees(c *gin.Context) {
-	limit, offset := shared.LimitOffset(c)
+	limit, offset, _ := shared.LimitOffsetSearch(c)
+	filter := employee.FilterParams{}
+	filter.Name = c.Query("name")
 
-	employees := h.empUC.GetAllEmployees(c.Request.Context(), limit, offset)
-	
-	c.JSON(200, employees)
+	employees := h.empUC.GetAllEmployees(c.Request.Context(), limit, offset, filter)
+	total,err := h.empUC.GetTotal(c.Request.Context(), filter)
+	if err != nil {
+		c.AbortWithStatusJSON(500, err.Error())
+		return
+	}
+
+	c.JSON(200, gin.H{"total": total, "employees": employees})
 }
 
 func (h Handler) GetEmployeeFull(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	employee := h.empUC.GetEmployeeFull(c.Request.Context(), id)
 	if employee == nil {
 		c.AbortWithStatusJSON(404, errors.NewError("employee not found"))
 		return
 	}
-	
+
 	c.JSON(200, employee)
 }
 
 func (h Handler) GetEmployee(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	employee := h.empUC.GetEmployee(c.Request.Context(), id)
 	if employee == nil {
 		c.AbortWithStatusJSON(404, errors.NewError("employee not found"))
 		return
 	}
-	
+
 	c.JSON(200, employee)
 }
 
@@ -77,14 +83,14 @@ func (h Handler) AddEmployee(c *gin.Context) {
 		c.AbortWithStatusJSON(400, err.Error())
 		return
 	}
-	
+
 	// Create employee
 	employee, err := h.empUC.AddEmployee(c.Request.Context(), &form)
 	if err != nil {
 		c.AbortWithStatusJSON(400, err.Error())
 		return
 	}
-	
+
 	c.JSON(201, employee)
 }
 
@@ -104,35 +110,35 @@ func (h Handler) UpdateEmployee(c *gin.Context) {
 		c.AbortWithStatusJSON(400, err.Error())
 		return
 	}
-	
+
 	existingEmployee.Update(form)
-	
+
 	// Update employee
 	err := h.empUC.UpdateEmployee(c.Request.Context(), existingEmployee)
 	if err != nil {
 		c.AbortWithStatusJSON(400, err.Error())
 		return
 	}
-	
-	c.Status(204)
+
+	c.JSON(200, existingEmployee)
 }
 
 func (h Handler) DeleteEmployee(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	// Check if employee exists
 	employee := h.empUC.GetEmployee(c.Request.Context(), id)
 	if employee == nil {
 		c.AbortWithStatusJSON(404, errors.NewError("employee not found"))
 		return
 	}
-	
+
 	// Delete employee
 	err := h.empUC.DeleteEmployee(c.Request.Context(), id)
 	if err != nil {
 		c.AbortWithStatusJSON(400, err.Error())
 		return
 	}
-	
+
 	c.Status(204)
 }

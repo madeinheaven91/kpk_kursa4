@@ -7,32 +7,31 @@ import (
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 )
 
-
-type ClientUC struct {
-    repo client.ClientRepo
+type UC struct {
+	repo client.Repo
 }
 
-func NewUC(repo client.ClientRepo) client.Usecase {
-    return &ClientUC{
-        repo: repo,
-    }
+func NewUC(repo client.Repo) client.UC {
+	return &UC{
+		repo: repo,
+	}
 }
 
-func (u *ClientUC) GetClient(ctx context.Context, id string) *models.Client {
+func (u *UC) GetClient(ctx context.Context, id string) *models.Client {
 	return u.repo.Get(ctx, id)
 }
 
-func (u *ClientUC) GetClientFull(ctx context.Context, id string) *models.Client {
+func (u *UC) GetClientFull(ctx context.Context, id string) *models.Client {
 	// TODO
 	// + []ClientOrder
 	return u.repo.Get(ctx, id)
 }
 
-func (u *ClientUC) GetAllClients(ctx context.Context, limit, offset int) []models.Client {
-	return u.repo.GetAll(ctx, limit, offset)
+func (u *UC) GetAllClients(ctx context.Context, limit, offset int, filter client.FilterParams) []models.Client {
+	return u.repo.GetAll(ctx, limit, offset, filter)
 }
 
-func (u *ClientUC) AddClient(ctx context.Context, form *models.AddClientForm) (*models.Client, error) {
+func (u *UC) AddClient(ctx context.Context, form *models.AddClientForm) (*models.Client, error) {
 	client := form.ToClient()
 	err := u.repo.Add(ctx, client)
 	if err != nil {
@@ -41,10 +40,14 @@ func (u *ClientUC) AddClient(ctx context.Context, form *models.AddClientForm) (*
 	return client, nil
 }
 
-func (u *ClientUC) DeleteClient(ctx context.Context, login string) error {
-    return u.repo.Delete(ctx, login)
+func (u *UC) DeleteClient(ctx context.Context, login string) error {
+	return u.repo.Delete(ctx, login)
 }
 
-func (u *ClientUC) UpdateClient(ctx context.Context, client *models.Client) error {
-    return u.repo.Update(ctx, client)
+func (u *UC) UpdateClient(ctx context.Context, client *models.Client) error {
+	return u.repo.Update(ctx, client)
+}
+
+func (u *UC) GetTotal(ctx context.Context, filter client.FilterParams) (int64, error) {
+	return u.repo.Total(ctx, filter)
 }

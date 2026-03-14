@@ -2,6 +2,7 @@ package services
 
 import (
 	"slices"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -32,30 +33,25 @@ func (s *AuthService) ValidateToken(tokenString string) (*account.CustomClaims, 
 		return nil, jwt.ErrInvalidKeyType
 	}
 
+	if claims.ExpiresAt <= time.Now().Unix() {
+		return nil, jwt.ErrTokenExpired
+	}
+
 	return claims, nil
 }
 
 func (s *AuthService) Authorized() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get token from header
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.AbortWithStatusJSON(401, gin.H{"error": "no authorization header"})
+		tokenString, err := c.Cookie("ACCESS_TOKEN")
+		if err != nil {
+			c.AbortWithStatusJSON(401, gin.H{"error": "no authorization cookie"})
 			return
 		}
-
-		// Extract Bearer token
-		const bearerPrefix = "Bearer "
-		if len(authHeader) <= len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
-			c.AbortWithStatusJSON(401, gin.H{"error": "invalid authorization header format"})
-			return
-		}
-		tokenString := authHeader[len(bearerPrefix):]
 
 		// Validate token
 		claims, err := s.ValidateToken(tokenString)
 		if err != nil {
-			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token", "message": err.Error()})
 			return
 		}
 

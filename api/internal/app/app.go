@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	accRepo "github.com/madeinheaven91/anim-crm-api/internal/domains/account/repo"
 	accHTTP "github.com/madeinheaven91/anim-crm-api/internal/domains/account/transport"
@@ -13,6 +14,9 @@ import (
 	empRepo "github.com/madeinheaven91/anim-crm-api/internal/domains/employee/repo"
 	empHTTP "github.com/madeinheaven91/anim-crm-api/internal/domains/employee/transport"
 	empUC "github.com/madeinheaven91/anim-crm-api/internal/domains/employee/usecase"
+	orderRepo "github.com/madeinheaven91/anim-crm-api/internal/domains/order/repo"
+	orderHTTP "github.com/madeinheaven91/anim-crm-api/internal/domains/order/transport"
+	orderUC "github.com/madeinheaven91/anim-crm-api/internal/domains/order/usecase"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared/config"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared/database"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared/services"
@@ -40,15 +44,22 @@ func SetupApp(c config.Config) App {
 
 	authService := services.NewService(c.Server.SecretKey)
 
-	v1 := router.Group("/api/v1")
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowCredentials: true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+	}), // services.Throttling(),
+	)
 
+	v1 := router.Group("/api/v1")
 
 	// Auth module
 	{
 		accrepo := accRepo.NewAccountRepo(db)
 		sRepo := accRepo.NewSessionRepo(db)
 		authUC := accUC.NewAuthUC(accrepo, sRepo, c.Server.SecretKey)
-        accUC := accUC.NewAccountUC(accrepo)
+		accUC := accUC.NewAccountUC(accrepo)
 		handler := accHTTP.NewHandler(accUC, authUC)
 		handler.SetupRouter(v1, authService)
 	}
@@ -57,7 +68,7 @@ func SetupApp(c config.Config) App {
 	{
 		repo := clientRepo.NewRepo(db)
 		uc := clientUC.NewUC(repo)
-		handler := clientHTTP.NewClientHandler(uc)
+		handler := clientHTTP.NewHandler(uc)
 		handler.SetupRouter(v1, authService)
 	}
 
@@ -65,7 +76,15 @@ func SetupApp(c config.Config) App {
 	{
 		repo := empRepo.NewRepo(db)
 		uc := empUC.NewUC(repo)
-		handler := empHTTP.NewEmployeeHandler(uc)
+		handler := empHTTP.NewHandler(uc)
+		handler.SetupRouter(v1, authService)
+	}
+
+	// Orders module
+	{
+		repo := orderRepo.NewRepo(db)
+		uc := orderUC.NewUC(repo)
+		handler := orderHTTP.NewHandler(uc)
 		handler.SetupRouter(v1, authService)
 	}
 

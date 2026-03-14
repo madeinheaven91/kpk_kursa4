@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/madeinheaven91/anim-crm-api/internal/domains/account"
 	repoAccount "github.com/madeinheaven91/anim-crm-api/internal/domains/account/repo"
 	usecaseAccount "github.com/madeinheaven91/anim-crm-api/internal/domains/account/usecase"
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
@@ -16,7 +17,7 @@ func (a App) Bootstrap() {
 
 	repo := repoAccount.NewAccountRepo(a.db)
 	uc := usecaseAccount.NewAccountUC(repo)
-	accounts := uc.GetAll(context.Background(), 1, 0)
+	accounts := uc.GetAll(context.Background(), 1, 0, account.FilterParams{})
 	if len(accounts) == 0 {
 		// Create root account
 		log.Println("BOOSTRAPPING | Creating root account")

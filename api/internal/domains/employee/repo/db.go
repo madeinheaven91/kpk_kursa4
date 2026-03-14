@@ -2,29 +2,38 @@ package repo
 
 import (
 	"context"
+	"strings"
 
 	"github.com/madeinheaven91/anim-crm-api/internal/domains/employee"
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 	"gorm.io/gorm"
 )
 
-type UserEmployeeRepo struct {
+type Repo struct {
 	db *gorm.DB
 }
 
-func NewRepo(db *gorm.DB) employee.EmployeeRepo {
-    return UserEmployeeRepo{db}
+func NewRepo(db *gorm.DB) employee.Repo {
+    return Repo{db}
 }
 
-func (r UserEmployeeRepo) GetAll(ctx context.Context, limit, offset int) []models.Employee {
-	res, err := gorm.G[models.Employee](r.db).Preload("Account", nil).Limit(limit).Offset(offset).Find(ctx)
+func (r Repo) GetAll(ctx context.Context, limit, offset int, filter employee.FilterParams) []models.Employee {
+	base := gorm.G[models.Employee](r.db).
+		Preload("Account", nil).
+		Limit(limit).
+		Offset(offset)
+	if filter.Name != "" {
+		base = base.Where("lower(name) LIKE ?", "%"+strings.ToLower(filter.Name)+"%")
+	}
+
+	res, err := base.Find(ctx)
 	if err != nil {
 		return nil
 	}
     return res
 }
 
-func (r UserEmployeeRepo) Get(ctx context.Context, id string) *models.Employee {
+func (r Repo) Get(ctx context.Context, id string) *models.Employee {
 	res, err := gorm.G[models.Employee](r.db).Preload("Account", nil).Where("id = ?", id).First(ctx)
 	if err != nil {
 		return nil
@@ -32,16 +41,25 @@ func (r UserEmployeeRepo) Get(ctx context.Context, id string) *models.Employee {
     return &res
 }
 
-func (r UserEmployeeRepo) Add(ctx context.Context, emp *models.Employee) error {
+func (r Repo) Add(ctx context.Context, emp *models.Employee) error {
 	return gorm.G[models.Employee](r.db).Create(ctx, emp)
 }
 
-func (r UserEmployeeRepo) Delete(ctx context.Context, id string) error {
+func (r Repo) Delete(ctx context.Context, id string) error {
 	_, err := gorm.G[models.Employee](r.db).Where("id = ?", id).Delete(ctx)
 	return err
 }
 
-func (r UserEmployeeRepo) Update(ctx context.Context, emp *models.Employee) error {
+func (r Repo) Update(ctx context.Context, emp *models.Employee) error {
 	_, err := gorm.G[models.Employee](r.db).Where("id = ?", emp.ID).Updates(ctx, *emp)
 	return err
 }
+
+func (r Repo) Total(ctx context.Context, filter employee.FilterParams) (int64, error) {
+	base := gorm.G[models.Employee](r.db).Offset(0)
+	if filter.Name != "" {
+		base = base.Where("lower(name) LIKE ?", "%"+strings.ToLower(filter.Name)+"%")
+	}
+	return base.Count(ctx, "id")
+}
+

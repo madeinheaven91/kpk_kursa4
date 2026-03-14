@@ -9,17 +9,17 @@ import (
 	"github.com/madeinheaven91/anim-crm-api/internal/shared/services"
 )
 
-type ClientHandler struct {
-	clientUC client.Usecase
+type Handler struct {
+	clientUC client.UC
 }
 
-func NewClientHandler(clientUC client.Usecase) ClientHandler {
-	return ClientHandler{
+func NewHandler(clientUC client.UC) Handler {
+	return Handler{
 		clientUC: clientUC,
 	}
 }
 
-func (h ClientHandler) SetupRouter(r *gin.RouterGroup, authService services.AuthService) {
+func (h Handler) SetupRouter(r *gin.RouterGroup, authService services.AuthService) {
 	// All client routes require authentication
 	auth := r.Group("")
 	auth.Use(authService.Authorized())
@@ -27,7 +27,6 @@ func (h ClientHandler) SetupRouter(r *gin.RouterGroup, authService services.Auth
 	// Employee and above can access these
 	auth.GET("/clients", h.GetAllClients)
 	auth.GET("/clients/:id", h.GetClientFull)
-	auth.GET("/clients/:id/short", h.GetClient)
 
 	// Manager and admin only operations
 	prot := auth.Group("")
@@ -37,15 +36,26 @@ func (h ClientHandler) SetupRouter(r *gin.RouterGroup, authService services.Auth
 	prot.DELETE("/clients/:id", h.DeleteClient)
 }
 
-func (h ClientHandler) GetAllClients(c *gin.Context) {
-	limit, offset := shared.LimitOffset(c)
+func (h Handler) GetAllClients(c *gin.Context) {
+	limit, offset, _ := shared.LimitOffsetSearch(c)
 
-	clients := h.clientUC.GetAllClients(c.Request.Context(), limit, offset)
+	filter := client.FilterParams{}
+	if name := c.Query("name"); name != "" {
+		filter.Name = name
+	}
 
-	c.JSON(200, clients)
+	clients := h.clientUC.GetAllClients(c.Request.Context(), limit, offset, filter)
+	total, err := h.clientUC.GetTotal(c.Request.Context(), filter)
+
+	if err != nil {
+		c.AbortWithStatusJSON(500, err.Error())
+		return
+	}
+
+	c.JSON(200, gin.H{"total": total, "clients": clients})
 }
 
-func (h ClientHandler) GetClientFull(c *gin.Context) {
+func (h Handler) GetClientFull(c *gin.Context) {
 	id := c.Param("id")
 
 	client := h.clientUC.GetClientFull(c.Request.Context(), id)
@@ -57,19 +67,7 @@ func (h ClientHandler) GetClientFull(c *gin.Context) {
 	c.JSON(200, client)
 }
 
-func (h ClientHandler) GetClient(c *gin.Context) {
-	id := c.Param("id")
-
-	client := h.clientUC.GetClient(c.Request.Context(), id)
-	if client == nil {
-		c.AbortWithStatusJSON(404, errors.NewError("client not found"))
-		return
-	}
-
-	c.JSON(200, client)
-}
-
-func (h ClientHandler) AddClient(c *gin.Context) {
+func (h Handler) AddClient(c *gin.Context) {
 	// Bind json
 	var form models.AddClientForm
 	if err := c.ShouldBindJSON(&form); err != nil {
@@ -87,7 +85,7 @@ func (h ClientHandler) AddClient(c *gin.Context) {
 	c.JSON(201, client)
 }
 
-func (h ClientHandler) UpdateClient(c *gin.Context) {
+func (h Handler) UpdateClient(c *gin.Context) {
 	id := c.Param("id")
 
 	// Check if client exists
@@ -113,10 +111,10 @@ func (h ClientHandler) UpdateClient(c *gin.Context) {
 		return
 	}
 
-	c.Status(204)
+	c.JSON(200, existingClient)
 }
 
-func (h ClientHandler) DeleteClient(c *gin.Context) {
+func (h Handler) DeleteClient(c *gin.Context) {
 	id := c.Param("id")
 
 	// Check if client exists

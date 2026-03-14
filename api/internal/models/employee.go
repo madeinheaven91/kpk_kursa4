@@ -1,19 +1,19 @@
 package models
 
 type Employee struct {
-	ID           string   `json:"id" gorm:"type:uuid;default:uuidv7();primaryKey"`
-	AccountLogin *string  `json:"account_id"`
+	ID           string   `json:"id" gorm:"type:uuid;default:uuidv7();primaryKey" binding:"required"`
+	AccountLogin *string  `json:"account_login"`
 	Account      *Account `gorm:"foreignKey:AccountLogin;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
 	Name         string   `json:"name"`
 	Phone        string   `json:"phone"`
 
-	Orders []Order `gorm:"many2many:order_employees" json:"orders"`
+	Orders []Order `gorm:"many2many:employee_orders" json:"orders"`
 }
 
 type AddEmployeeForm struct {
 	AccountLogin *string `json:"account_login"`
 	Name         string `json:"name" binding:"required"`
-	Phone        string `json:"phone" binding:"required"`
+	Phone        string `json:"phone" binding:"required,e164"`
 }
 
 func (f AddEmployeeForm) ToEmployee() *Employee {
@@ -39,5 +39,5 @@ func (e *Employee) Update(form UpdateEmployeeForm) {
 type UpdateEmployeeForm struct {
 	AccountLogin string `json:"account_login"`
 	Name  string `json:"name"`
-	Phone string `json:"phone"`
+	Phone string `json:"phone" binding:"e164"`
 }

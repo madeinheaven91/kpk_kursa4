@@ -6,13 +6,19 @@ import (
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 )
 
+type FilterParams struct {
+	Login string
+}
+
 type AccountRepo interface {
 	Get(ctx context.Context, login string) *models.Account
-	GetAll(ctx context.Context, limit, offset int) []models.Account
+	GetAll(ctx context.Context, limit, offset int, filter FilterParams) []models.Account
 
 	Add(ctx context.Context, account *models.Account) error
 	Update(ctx context.Context, account *models.Account) error
 	Delete(ctx context.Context, login string) error
+
+	Total(ctx context.Context, filter FilterParams) (int64, error)
 }
 
 type SessionRepo interface {
@@ -24,7 +30,7 @@ type SessionRepo interface {
 	DeleteByRefreshToken(ctx context.Context, refreshToken string) error
 }
 
-type AuthUsecase interface {
+type AuthUC interface {
 	Login(ctx context.Context, form models.LoginForm) (*models.Session, error)
 	Logout(ctx context.Context, refreshToken string) error
 	Refresh(ctx context.Context, refreshToken string) (string, string, error)
@@ -36,10 +42,12 @@ type AuthUsecase interface {
 	GenerateRefreshToken(ctx context.Context, account *models.Account) (string, error)
 }
 
-type AccountUsecase interface {
+type AccountUC interface {
 	Create(ctx context.Context, form models.AddAccountForm) (*models.Account, error)
 	Get(ctx context.Context, login string) *models.Account
-	GetAll(ctx context.Context, limit, offset int) []models.Account
+	GetAll(ctx context.Context, limit, offset int, filter FilterParams) []models.Account
 	Update(ctx context.Context, account *models.Account) error
 	Delete(ctx context.Context, login string) error
+
+	GetTotal(ctx context.Context, filter FilterParams) (int64, error)
 } 

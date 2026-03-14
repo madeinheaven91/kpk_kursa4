@@ -18,7 +18,7 @@ type AuthUC struct {
 	secretKey string
 }
 
-func NewAuthUC(acc account.AccountRepo, s account.SessionRepo, secretKey string) account.AuthUsecase {
+func NewAuthUC(acc account.AccountRepo, s account.SessionRepo, secretKey string) account.AuthUC {
 	return &AuthUC{
 		accRepo:   acc,
 		sesRepo:   s,
@@ -62,7 +62,7 @@ func (u AuthUC) Refresh(ctx context.Context, refreshToken string) (string, strin
 	if ses == nil {
 		return "", "", errors.New("session not found")
 	}
-	if ses.Expires_At.Unix() < time.Now().Unix() {
+	if ses.Expires_At.Time().Unix() < time.Now().Unix() {
 		u.sesRepo.DeleteByRefreshToken(ctx, refreshToken)
 		return "", "", errors.New("session expired")
 	}
@@ -96,11 +96,6 @@ func (u AuthUC) GenerateAccessToken(ctx context.Context, acc *models.Account) (s
 		ExpiresAt: now.Add(time.Hour * 1).Unix(),
 	}
 
-	// jwt.MapClaims{
-	// 	"sub": account.Login,
-	// 	"exp": time.Now().Add(time.Hour * 1).Unix(),
-	// }
-	//
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(u.secretKey))
 }

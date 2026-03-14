@@ -7,11 +7,12 @@ func (a App) Migrate() {
 		&models.Account{},
 		&models.Session{},
 		&models.Client{},
-		&models.Employee{},
 		&models.Order{},
+		&models.Employee{},
+		&models.EmployeeOrders{},
 	)
 
-	err := a.db.SetupJoinTable(&models.Employee{}, "Orders", &models.OrderEmployees{})
+	err := a.db.SetupJoinTable(&models.Employee{}, "Orders", &models.EmployeeOrders{})
 	if err != nil {
 		panic(err)
 	}

@@ -1,7 +1,7 @@
 include .env
 export $(shell sed 's/=.*//' .env)
 
-.PHONY: api psql migration test
+.PHONY: api psql migration test frontend
 
 api:
 	@cd api && ENVIRONMENT=dev go run cmd/api/main.go
@@ -17,3 +17,6 @@ test:
 
 test-local:
 	@cd backend && ENV_PATH=/home/madeinheaven91/Projects/anim-crm/.env go test -v ./...
+
+frontend:
+	@cd frontend && npm run dev

@@ -18,7 +18,8 @@ interface Order {
 	employees: EmployeeRole[],
 	datetime: string,
 	duration: number,
-	address: string
+	address: string,
+	description: string
 }
 
 interface OrderRepr {
@@ -27,6 +28,7 @@ interface OrderRepr {
 	time: string,
 	duration: string,
 	address: string,
+	description: string,
 	status: Status
 }
 
@@ -71,6 +73,7 @@ function OrdersToRepr(orders: Order[]): OrderRepr[] {
 			time,
 			duration: `${order.duration} ч.`,
 			address: order.address,
+            description: order.description,
 			status
 		};
 	});
@@ -102,15 +105,15 @@ const FetchEmployeeOrders = (limit: number = 5, page: number = 1, empID: string 
 		url: ApiRoutes.getOrdersURL(), method: "GET", params: {
 			limit: limit,
 			offset: (page - 1) * limit,
-			employee_ID: empID
+			employee_id: empID
 		}
 	}
 )
 
 interface FilterParams {
-	clientID?: string;
+	client_id?: string;
+	employee_id?: string;
 	dateRange?: DateRange | null;
-	employeeID?: string;
 }
 
 const FetchOrdersFiltered = (limit: number = 1, page: number = 1, filter: FilterParams) =>(
@@ -120,10 +123,10 @@ const FetchOrdersFiltered = (limit: number = 1, page: number = 1, filter: Filter
 			params: {
 				limit: limit,
 				offset: (page - 1) * limit,
-				client_id: filter.clientID || undefined,
+				client_id: filter.client_id || undefined,
 				start_min: filter.dateRange?.from ? format(filter.dateRange.from, "dd.MM.yyyy") : undefined,
 				start_max: filter.dateRange?.to ? format(filter.dateRange.to, "dd.MM.yyyy") : undefined,
-				employee_id: filter.employeeID || undefined,
+				employee_id: filter.employee_id || undefined,
 			}
 		}
 )

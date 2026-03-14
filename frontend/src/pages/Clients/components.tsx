@@ -3,20 +3,12 @@ import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableFooter,
-	TableHead,
-	TableHeader,
-	TableRow
-} from "@/components/ui/table";
 import type { Client } from "@/lib/api/clients";
 import { OrdersToRepr, StatusClass } from "@/lib/api/orders";
 import { formatPhoneNumber } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Loader2, SearchIcon, XIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, SearchIcon, Table, XIcon } from "lucide-react";
 import { CLIENT_PAGE_LIMIT, ORDER_PAGE_LIMIT, type Order } from "./hooks";
+import { TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
 
 const SearchBar = ({ search, onSearchChange, onSearch, onClear }: {
 	search: string;
@@ -29,8 +21,7 @@ const SearchBar = ({ search, onSearchChange, onSearch, onClear }: {
 			placeholder="Поиск по имени"
 			value={search}
 			onChange={(e) => onSearchChange(e.target.value)}
-			onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-		/>
+			onKeyDown={(e) => e.key === 'Enter' && onSearch()} />
 		<Button variant='outline' onClick={onClear}><XIcon /></Button>
 		<Button variant='outline' onClick={onSearch}><SearchIcon /></Button>
 	</ButtonGroup>
@@ -48,15 +39,11 @@ const Pagination = ({ page, total, onPageChange }: {
 		<div className='flex justify-center gap-10 items-center'>
 			<ChevronLeft
 				onClick={() => onPageChange(page - 1)}
-				className={`cursor-pointer transition-opacity ${isFirstPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'
-					}`}
-			/>
+				className={`cursor-pointer transition-opacity ${isFirstPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`} />
 			<p>{page} из {total}</p>
 			<ChevronRight
 				onClick={() => onPageChange(page + 1)}
-				className={`cursor-pointer transition-opacity ${isLastPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'
-					}`}
-			/>
+				className={`cursor-pointer transition-opacity ${isLastPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`} />
 		</div>
 	);
 };
@@ -81,23 +68,20 @@ const DeleteDialog = ({ isDeleteDialogOpen, setIsDeleteDialogOpen, isDeleting, h
 				<Button
 					variant="outline"
 					onClick={() => setIsDeleteDialogOpen(false)}
-					disabled={isDeleting}
-				>
+					disabled={isDeleting} >
 					Отмена
 				</Button>
 				<Button
 					variant="destructive"
 					onClick={handleDelete}
-					disabled={isDeleting}
-				>
-					{isDeleting ? (
+					disabled={isDeleting} >
+					{isDeleting ?
 						<>
 							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 							Удаление...
 						</>
-					) : (
-						"Удалить"
-					)}
+						:
+						"Удалить"}
 				</Button>
 			</DialogFooter>
 		</DialogContent>
@@ -175,16 +159,14 @@ const OrdersTable = ({
 					<TableCell className={`max-w-[100px] truncate ${StatusClass(order.status)}`}>{order.time}</TableCell>
 					<TableCell className={`max-w-[100px] truncate ${StatusClass(order.status)}`}>{order.duration}</TableCell>
 					<TableCell className={`max-w-[100px] truncate ${StatusClass(order.status)}`}>{order.address}</TableCell>
-				</TableRow>
-			)}
+				</TableRow>)}
 			<EmptyRows count={ORDER_PAGE_LIMIT - orders.length} startIndex={orders.length - 1} colSpan={3} />
 		</TableBody>
 		<TableFooter>
 			<TableRow>
 				<TableCell colSpan={3} className='pl-5'>Всего заказов: {total}</TableCell>
 				<TableCell>
-					{totalPages > 1 &&
-						<Pagination page={page} total={totalPages} onPageChange={onPageChange} />}
+					{totalPages > 1 && <Pagination page={page} total={totalPages} onPageChange={onPageChange} />}
 				</TableCell>
 			</TableRow>
 		</TableFooter>

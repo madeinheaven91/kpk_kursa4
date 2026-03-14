@@ -79,11 +79,6 @@ function useAccountMutations(onSuccess: () => void) {
 		}
 	};
 
-	const handleEdit = () => {
-		setEditedAccount(selectedAccount || {});
-		setMode(Mode.Editing);
-	};
-
 	const handleAdd = () => {
 		setMode(Mode.Adding);
 		setSelectedAccount(null);

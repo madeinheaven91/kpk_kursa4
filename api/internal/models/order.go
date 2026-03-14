@@ -6,14 +6,15 @@ import (
 )
 
 type Order struct {
-	ID       int      `json:"id" gorm:"primaryKey;autoIncrement"`
-	ClientID string   `json:"client_id" gorm:"type:uuid"`
-	Client   *Client  `json:"-" gorm:"foreignKey:ClientID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
-	Datetime JsonTime `json:"datetime" gorm:"type:timestamp;not null"`
-	Duration *int     `json:"duration"`
-	Address  string   `json:"address" gorm:"not null"`
+	ID          int      `json:"id" gorm:"primaryKey;autoIncrement"`
+	ClientID    string   `json:"client_id" gorm:"type:uuid"`
+	Client      *Client  `json:"-" gorm:"foreignKey:ClientID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	Datetime    JsonTime `json:"datetime" gorm:"type:timestamp;not null"`
+	Duration    *int     `json:"duration"`
+	Address     string   `json:"address" gorm:"not null"`
+	Description *string  `json:"description"`
 
-    EmployeeOrders []EmployeeOrders `gorm:"foreignKey:OrderID" json:"-"`
+	EmployeeOrders []EmployeeOrders `gorm:"foreignKey:OrderID" json:"-"`
 }
 
 type EmployeeOrders struct {
@@ -31,15 +32,15 @@ type EmployeeRole struct {
 	Role     string `json:"role" binding:"required"`
 }
 
-func (e EmployeeRole) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]any{
-		"id":      e.ID,
-		"account": e.Account,
-		"name":    e.Name,
-		"phone":   e.Phone,
-		"role":    e.Role,
-	})
-}
+// func (e EmployeeRole) MarshalJSON() ([]byte, error) {
+// 	return json.Marshal(map[string]any{
+// 		"id":      e.ID,
+// 		"account": e.Account,
+// 		"name":    e.Name,
+// 		"phone":   e.Phone,
+// 		"role":    e.Role,
+// 	})
+// }
 
 func (e *EmployeeRole) UnmarshalJSON(data []byte) error {
 	var er map[string]any
@@ -60,21 +61,23 @@ func (e *EmployeeRole) UnmarshalJSON(data []byte) error {
 }
 
 type OrderFull struct {
-	ID        int            `json:"id"`
-	Client    *Client        `json:"client"`
-	Employees []EmployeeRole `json:"employees"`
-	Datetime  JsonTime       `json:"datetime"`
-	Duration  *int            `json:"duration"`
-	Address   string         `json:"address"`
+	ID          int            `json:"id"`
+	Client      *Client        `json:"client"`
+	Employees   []EmployeeRole `json:"employees"`
+	Datetime    JsonTime       `json:"datetime"`
+	Duration    *int           `json:"duration"`
+	Address     string         `json:"address"`
+	Description *string        `json:"description"`
 }
 
 type AddOrderForm struct {
 	ClientID string `json:"client_id" binding:"required"`
 	// Employees is a list of employee IDs
-	Employees []EmployeeRole `json:"employees" binding:"required"`
-	Datetime  JsonTime       `json:"datetime" binding:"required"`
-	Duration  *int           `json:"duration"`
-	Address   string         `json:"address" binding:"required"`
+	Employees   []EmployeeRole `json:"employees" binding:"required"`
+	Datetime    JsonTime       `json:"datetime" binding:"required"`
+	Duration    *int           `json:"duration"`
+	Address     string         `json:"address" binding:"required"`
+	Description *string        `json:"description"`
 }
 
 func (a AddOrderForm) ToOrder() (*Order, []EmployeeRole) {
@@ -83,5 +86,6 @@ func (a AddOrderForm) ToOrder() (*Order, []EmployeeRole) {
 		Address:  a.Address,
 		Datetime: a.Datetime,
 		Duration: a.Duration,
+		Description: a.Description,
 	}, a.Employees
 }

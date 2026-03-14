@@ -2,7 +2,7 @@ package models
 
 type Employee struct {
 	ID           string   `json:"id" gorm:"type:uuid;default:uuidv7();primaryKey" binding:"required"`
-	AccountLogin *string  `json:"account_login"`
+	AccountLogin *string  `json:"account_login" gorm:"unique"`
 	Account      *Account `gorm:"foreignKey:AccountLogin;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
 	Name         string   `json:"name"`
 	Phone        string   `json:"phone"`

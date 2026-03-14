@@ -3,7 +3,6 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
-	Table,
 	TableBody,
 	TableCell,
 	TableFooter,
@@ -12,7 +11,7 @@ import {
 	TableRow
 } from "@/components/ui/table";
 import { displayRole, type Account } from "@/lib/api/accounts";
-import { ChevronLeft, ChevronRight, Loader2, SearchIcon, XIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, SearchIcon, Table, XIcon } from "lucide-react";
 import { ACCOUNTS_PAGE_LIMIT } from "./hooks";
 
 // Пустые строчки для заполнения таблицы сотрудников
@@ -21,8 +20,7 @@ const AccountEmptyRows = ({ count, startIndex }: { count: number; startIndex: nu
 		{Array.from({ length: count }).map((_, index) => (
 			<TableRow
 				key={`empty-${index}`}
-				className={`${(startIndex + index) % 2 !== 0 ? "bg-muted/30" : ""}`}
-			>
+				className={`${(startIndex + index) % 2 !== 0 ? "bg-muted/30" : ""}`} >
 				<TableCell colSpan={2} className="opacity-0">—</TableCell>
 			</TableRow>
 		))}
@@ -59,15 +57,11 @@ const Pagination = ({ page, total, onPageChange }: {
 		<div className='flex justify-center gap-10 items-center'>
 			<ChevronLeft
 				onClick={() => onPageChange(page - 1)}
-				className={`cursor-pointer transition-opacity ${isFirstPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'
-					}`}
-			/>
+				className={`cursor-pointer transition-opacity ${isFirstPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70' }`} />
 			<p>{page} из {total}</p>
 			<ChevronRight
 				onClick={() => onPageChange(page + 1)}
-				className={`cursor-pointer transition-opacity ${isLastPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'
-					}`}
-			/>
+				className={`cursor-pointer transition-opacity ${isLastPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`} />
 		</div>
 	);
 };
@@ -84,7 +78,7 @@ const DeleteDialog = ({ isDeleteDialogOpen, setIsDeleteDialogOpen, isDeleting, h
 			<DialogHeader>
 				<DialogTitle>Подтверждение удаления</DialogTitle>
 				<DialogDescription>
-					Вы уверены, что хотите удалить сотрудника {selectedAccount?.name}?
+					Вы уверены, что хотите удалить аккаунт {selectedAccount?.login}?
 					Это действие нельзя отменить.
 				</DialogDescription>
 			</DialogHeader>
@@ -92,23 +86,20 @@ const DeleteDialog = ({ isDeleteDialogOpen, setIsDeleteDialogOpen, isDeleting, h
 				<Button
 					variant="outline"
 					onClick={() => setIsDeleteDialogOpen(false)}
-					disabled={isDeleting}
-				>
+					disabled={isDeleting} >
 					Отмена
 				</Button>
 				<Button
 					variant="destructive"
 					onClick={handleDelete}
-					disabled={isDeleting}
-				>
-					{isDeleting ? (
+					disabled={isDeleting} >
+					{isDeleting ?
 						<>
 							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 							Удаление...
 						</>
-					) : (
-						"Удалить"
-					)}
+						:
+						"Удалить"}
 				</Button>
 			</DialogFooter>
 		</DialogContent>
@@ -136,16 +127,14 @@ const AccountsTable = ({ accounts, selectedAccount, handleSelectAccount, page, t
 				<TableRow onClick={() => handleSelectAccount(account)} key={account.login} className={`${i % 2 === 0 ? "bg-muted/30" : ""} ${selectedAccount && account.login === selectedAccount.login ? "bg-accent/90 hover:bg-accent text-background" : ""} cursor-pointer`}>
 					<TableCell className='pl-5 max-w-[200px] truncate'>{account.login}</TableCell>
 					<TableCell className='max-w-[100px] truncate'>{displayRole(account.role)}</TableCell>
-				</TableRow>
-			)}
+				</TableRow>)}
 			<AccountEmptyRows count={ACCOUNTS_PAGE_LIMIT - accounts.length} startIndex={accounts.length - 1} />
 		</TableBody>
 		<TableFooter>
 			<TableRow>
 				<TableCell className='pl-5'>Найдено аккаунтов: {total}</TableCell>
 				<TableCell>
-					{totalPages > 1 &&
-						<Pagination page={page} total={totalPages} onPageChange={onPageChange} />}
+					{totalPages > 1 && <Pagination page={page} total={totalPages} onPageChange={onPageChange} />}
 				</TableCell>
 			</TableRow>
 		</TableFooter>

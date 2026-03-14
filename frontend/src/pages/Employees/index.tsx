@@ -8,12 +8,15 @@ import {
 } from "lucide-react";
 import React, { useEffect } from "react";
 
+import { SearchCombobox } from "@/components/search-combobox";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
+import type { Account } from "@/lib/api/accounts";
+import { ApiRoutes } from "@/lib/routes";
 import { formatPhoneNumber } from "@/lib/utils";
+import axios from "axios";
 import { DeleteDialog, EmployeesTable, OrdersTable, SearchBar } from "./components";
 import { useEmployeeMutations, useEmployeeOrders, useEmployees } from "./hooks";
 
@@ -101,15 +104,12 @@ function EmployeesPage() {
 									page={employeesPage}
 									totalPages={employeesPageTotal}
 									total={employeesTotal}
-									onPageChange={employeesSetPage}
-								/>
+									onPageChange={employeesSetPage} />
 						}
 					</div>
 				</div>
 
-				{/* Окно с информацией 
-					TODO: список заказов
-				*/}
+				{/* Окно с информацией */}
 				<div className={`flex flex-col justify-between rounded-lg p-4 ${selectedEmployee || isAdding ? 'border-1 border-text shadow-md' : ''}`}>
 					{selectedEmployee &&
 						<>
@@ -123,13 +123,12 @@ function EmployeesPage() {
 												<Button variant='outline' onClick={handleCancel}><XIcon />Отмена</Button>
 												<Button
 													onClick={handleSave}
-													disabled={isSaving}
-												>
-													{isSaving ? (
+													disabled={isSaving} >
+													{isSaving ?
 														<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-													) : (
+														:
 														<SaveIcon className="mr-2 h-4 w-4" />
-													)}
+													}
 													Сохранить
 												</Button>
 											</>
@@ -139,12 +138,24 @@ function EmployeesPage() {
 									<Button variant='ghost' onClick={() => handleSelectEmployee(null)}><XIcon /></Button>
 								</div>
 								{isEditing ?
-									<Input
-										value={editedEmployee.name || ''}
-										onChange={(e) => handleFieldChange('name', e.target.value)}
-										placeholder="Имя"
-										className='md:text-4xl py-6'
-									/>
+									<>
+										<Input
+											value={editedEmployee.name || ''}
+											onChange={(e) => handleFieldChange('name', e.target.value)}
+											placeholder="Имя"
+											className='md:text-4xl py-6' />
+										<SearchCombobox<Account>
+											placeholder="Начните вводить логин"
+											onSearch={async (query) =>
+												await axios.get(ApiRoutes.getAccountsURL(), {
+													params: { login: query, limit: 10 },
+													withCredentials: true,
+												}).then(r => r.data.accounts)
+											}
+											onSelect={(a: Account) => handleFieldChange('account_login', a?.login ?? undefined)}
+											getLabel={(item) => item.login}
+											renderOption={(item) => item.login} />
+									</>
 									:
 									<h2 className='text-4xl text-pretty'>{selectedEmployee.name} {selectedEmployee.account_login ? `(${selectedEmployee.account_login})` : ""}</h2>}
 								<h2 className='text-lg opacity-50 mb-3'>{selectedEmployee.id}</h2>
@@ -153,8 +164,7 @@ function EmployeesPage() {
 										value={editedEmployee.phone || ''}
 										onChange={(e) => handleFieldChange('phone', e.target.value)}
 										placeholder="Телефон"
-										className='md:text-3xl py-5'
-									/>
+										className='md:text-3xl py-5' />
 									:
 									<h2 className='text-3xl'><a href={`tel:${formatPhoneNumber(selectedEmployee.phone)}`}>{formatPhoneNumber(selectedEmployee.phone)}</a></h2>}
 								<Separator className='my-5' />
@@ -170,8 +180,7 @@ function EmployeesPage() {
 											page={ordersPage}
 											totalPages={ordersPageTotal}
 											total={ordersTotal}
-											onPageChange={ordersSetPage}
-										/>
+											onPageChange={ordersSetPage} />
 								}
 							</div>
 						</>
@@ -195,8 +204,7 @@ function EmployeesPage() {
 											value={newEmployee.name || ''}
 											onChange={(e) => handleFieldChange('name', e.target.value)}
 											placeholder="Имя"
-											className='md:text-xl py-6'
-										/>
+											className='md:text-xl py-6' />
 									</Field>
 									<Field>
 										<FieldLabel htmlFor='input-name' className='text-xl'>
@@ -216,13 +224,11 @@ function EmployeesPage() {
 							<div className='flex gap-2 h-fit'>
 								<Button
 									onClick={handleSave}
-									disabled={isSaving}
-								>
-									{isSaving ? (
+									disabled={isSaving}>
+									{isSaving ?
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									) : (
-										<SaveIcon className="mr-2 h-4 w-4" />
-									)}
+										:
+										<SaveIcon className="mr-2 h-4 w-4" />}
 									Сохранить
 								</Button>
 							</div>

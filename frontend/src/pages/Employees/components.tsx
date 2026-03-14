@@ -23,8 +23,7 @@ const EmployeeEmptyRows = ({ count, startIndex }: { count: number; startIndex: n
 		{Array.from({ length: count }).map((_, index) => (
 			<TableRow
 				key={`empty-${index}`}
-				className={`${(startIndex + index) % 2 !== 0 ? "bg-muted/30" : ""}`}
-			>
+				className={`${(startIndex + index) % 2 !== 0 ? "bg-muted/30" : ""}`} >
 				<TableCell colSpan={3} className="opacity-0">—</TableCell>
 			</TableRow>
 		))}
@@ -42,8 +41,7 @@ const SearchBar = ({ search, onSearchChange, onSearch, onClear }: {
 			placeholder="Поиск по имени"
 			value={search}
 			onChange={(e) => onSearchChange(e.target.value)}
-			onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-		/>
+			onKeyDown={(e) => e.key === 'Enter' && onSearch()} />
 		<Button variant='outline' onClick={onClear}><XIcon /></Button>
 		<Button variant='outline' onClick={onSearch}><SearchIcon /></Button>
 	</ButtonGroup>
@@ -61,15 +59,11 @@ const Pagination = ({ page, total, onPageChange }: {
 		<div className='flex justify-center gap-10 items-center'>
 			<ChevronLeft
 				onClick={() => onPageChange(page - 1)}
-				className={`cursor-pointer transition-opacity ${isFirstPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'
-					}`}
-			/>
+				className={`cursor-pointer transition-opacity ${isFirstPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`} />
 			<p>{page} из {total}</p>
 			<ChevronRight
 				onClick={() => onPageChange(page + 1)}
-				className={`cursor-pointer transition-opacity ${isLastPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'
-					}`}
-			/>
+				className={`cursor-pointer transition-opacity ${isLastPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`} />
 		</div>
 	);
 };
@@ -94,23 +88,19 @@ const DeleteDialog = ({ isDeleteDialogOpen, setIsDeleteDialogOpen, isDeleting, h
 				<Button
 					variant="outline"
 					onClick={() => setIsDeleteDialogOpen(false)}
-					disabled={isDeleting}
-				>
+					disabled={isDeleting} >
 					Отмена
 				</Button>
 				<Button
 					variant="destructive"
 					onClick={handleDelete}
-					disabled={isDeleting}
-				>
-					{isDeleting ? (
+					disabled={isDeleting} >
+					{isDeleting ?
 						<>
 							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 							Удаление...
 						</>
-					) : (
-						"Удалить"
-					)}
+						: "Удалить"}
 				</Button>
 			</DialogFooter>
 		</DialogContent>
@@ -165,8 +155,7 @@ const OrderEmptyRows = ({ count, startIndex }: { count: number; startIndex: numb
 		{Array.from({ length: count }).map((_, index) => (
 			<TableRow
 				key={`empty-${index}`}
-				className={`${(startIndex + index) % 2 !== 0 ? "bg-muted/30" : ""}`}
-			>
+				className={`${(startIndex + index) % 2 !== 0 ? "bg-muted/30" : ""}`} >
 				<TableCell colSpan={3} className="opacity-0">—</TableCell>
 			</TableRow>
 		))}
@@ -202,20 +191,18 @@ const OrdersTable = ({
 					<TableCell className={`max-w-[100px] truncate ${StatusClass(order.status)}`}>{order.time}</TableCell>
 					<TableCell className={`max-w-[100px] truncate ${StatusClass(order.status)}`}>{order.duration}</TableCell>
 					<TableCell className={`max-w-[100px] truncate ${StatusClass(order.status)}`}>{order.address}</TableCell>
-				</TableRow>
-			)}
+				</TableRow>)}
 			<OrderEmptyRows count={ORDER_PAGE_LIMIT - orders.length} startIndex={orders.length - 1} />
 		</TableBody>
 		<TableFooter>
 			<TableRow>
 				<TableCell colSpan={3} className='pl-5'>Всего заказов: {total}</TableCell>
 				<TableCell>
-					{totalPages > 1 &&
-						<Pagination page={page} total={totalPages} onPageChange={onPageChange} />}
+					{totalPages > 1 && <Pagination page={page} total={totalPages} onPageChange={onPageChange} />}
 				</TableCell>
 			</TableRow>
 		</TableFooter>
 	</Table>
 )
 
-export { EmployeesTable, DeleteDialog, OrdersTable, SearchBar };
+export { DeleteDialog, EmployeesTable, OrdersTable, SearchBar };

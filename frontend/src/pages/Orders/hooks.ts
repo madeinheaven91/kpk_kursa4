@@ -12,6 +12,7 @@ interface AddOrderForm {
 	datetime: string; // ISO or formatted string
 	duration?: number;
 	address: string;
+	description?: string;
 }
 
 import { FetchOrdersFiltered, type FilterParams, type Order, type OrdersResponse } from "@/lib/api/orders";

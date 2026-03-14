@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import type { Client } from "@/lib/api/clients";
+import type { EmployeeRole } from "@/lib/api/employees";
 import { OrdersToRepr, StatusClass } from "@/lib/api/orders";
 import { ApiRoutes } from "@/lib/routes";
 import axios from "axios";
@@ -13,12 +15,11 @@ import {
 	PlusIcon,
 	SaveIcon,
 	TrashIcon,
-	XIcon
+	XIcon,
 } from "lucide-react";
 import React, { useEffect } from "react";
 import { DateTimePicker, DeleteDialog, EmployeeRolesEditor, FilterBar, OrdersTable } from "./components";
 import { useOrderMutations, useOrders } from "./hooks";
-import type { EmployeeRole } from "@/lib/api/employees";
 
 function OrdersPage() {
 	const {
@@ -65,38 +66,34 @@ function OrdersPage() {
 		<section className='h-screen p-4'>
 			<h1 className='text-4xl py-5'>Заказы</h1>
 			<div className='grid grid-cols-2 gap-10'>
-
-				{/* ── Left: table + filters ── */}
+				{/* Таблица заказов */}
 				<div className='flex flex-col gap-5'>
 					<div className='flex flex-row gap-5 items-center justify-between'>
 						<FilterBar filter={filter} onApply={handleApplyFilter} onClear={handleClearFilter} />
 						<Button onClick={handleAdd}><PlusIcon /> Добавить</Button>
 					</div>
 					<div className='border-1 border-text shadow-md rounded-lg'>
-						{loading ? (
+						{loading ?
 							<div className="flex justify-center items-center p-20">
 								<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto" />
 							</div>
-						) : error ? (
-							<p>Ошибка загрузки заказов: {error}</p>
-						) : (
-							<OrdersTable
-								orders={orders}
-								selectedOrder={selectedOrder}
-								handleSelectOrder={handleSelectOrder}
-								page={page}
-								totalPages={pageTotal}
-								total={total}
-								onPageChange={setPage}
-							/>
-						)}
+							: error ?
+								<p>Ошибка загрузки заказов: {error}</p>
+								:
+								<OrdersTable
+									orders={orders}
+									selectedOrder={selectedOrder}
+									handleSelectOrder={handleSelectOrder}
+									page={page}
+									totalPages={pageTotal}
+									total={total}
+									onPageChange={setPage} />
+						}
 					</div>
 				</div>
 
-				{/* ── Right: detail / add panel ── */}
+				{/* Информация о заказе */}
 				<div className={`flex flex-col justify-between rounded-lg p-4 ${selectedOrder || isAdding ? 'border-1 border-text shadow-md' : ''}`}>
-
-					{/* ── View / Edit selected order ── */}
 					{selectedOrder && repr && (
 						<>
 							<div>
@@ -135,32 +132,30 @@ function OrdersPage() {
 								{/* Datetime */}
 								<div className='mb-3'>
 									<p className='text-sm opacity-60 mb-1'>Дата и время</p>
-									{isEditing ? (
+									{isEditing ?
 										<Input
 											type='datetime-local'
 											value={typeof editedOrder.datetime === 'string' ? editedOrder.datetime.replace(' ', 'T').slice(0, 16) : ''}
 											onChange={e => handleFieldChange('datetime', e.target.value)}
-											className='md:text-xl py-5'
-										/>
-									) : (
+											className='md:text-xl py-5' />
+										:
 										<p className={`text-2xl ${StatusClass(repr.status)}`}>{repr.date} в {repr.time}</p>
-									)}
+									}
 								</div>
 
 								{/* Duration */}
 								<div className='mb-3'>
 									<p className='text-sm opacity-60 mb-1'>Длительность (ч.)</p>
-									{isEditing ? (
+									{isEditing ?
 										<Input
 											type='number'
 											min={1}
 											value={(editedOrder as { duration?: number }).duration ?? ''}
 											onChange={e => handleFieldChange('duration', e.target.value ? Number(e.target.value) : undefined)}
-											className='md:text-xl py-5 w-32'
-										/>
-									) : (
+											className='md:text-xl py-5 w-32' />
+										:
 										<p className={`text-xl ${StatusClass(repr.status)}`}>{repr.duration}</p>
-									)}
+									}
 								</div>
 
 								<Separator className='my-4' />
@@ -168,34 +163,31 @@ function OrdersPage() {
 								{/* Client */}
 								<div className='mb-3'>
 									<p className='text-sm opacity-60 mb-1'>Клиент</p>
-									{isEditing ? (
+									{isEditing ?
 										<Input
 											placeholder="UUID клиента"
 											value={(editedOrder as { client_id?: string }).client_id || selectedOrder.client?.id || ''}
 											onChange={e => handleFieldChange('client_id', e.target.value)}
-											className='md:text-xl py-5'
-										/>
-									) : (
+											className='md:text-xl py-5' />
+										:
 										<>
 											<p className='text-xl'>{selectedOrder.client?.name || <span className='opacity-50'>Не указан</span>}</p>
 											{selectedOrder.client && <p className='text-sm opacity-50'>{selectedOrder.client.phone}</p>}
 										</>
-									)}
+									}
 								</div>
 
 								{/* Address */}
 								<div className='mb-3'>
 									<p className='text-sm opacity-60 mb-1'>Адрес</p>
-									{isEditing ? (
+									{isEditing ?
 										<Input
 											value={(editedOrder as { address?: string }).address || ''}
 											onChange={e => handleFieldChange('address', e.target.value)}
 											placeholder="Адрес"
-											className='md:text-xl py-5'
-										/>
-									) : (
-										<p className={`text-xl ${StatusClass(repr.status)}`}>{selectedOrder.address}</p>
-									)}
+											className='md:text-xl py-5' />
+										: <p className={`text-xl ${StatusClass(repr.status)}`}>{selectedOrder.address}</p>
+									}
 								</div>
 
 								<Separator className='my-4' />
@@ -203,26 +195,42 @@ function OrdersPage() {
 								{/* Employees */}
 								<div className='mb-3'>
 									<p className='text-sm opacity-60 mb-2'>Сотрудники</p>
-									{isEditing ? (
+									{isEditing ?
 										<EmployeeRolesEditor
 											employees={(editedOrder as { employees?: { id: string; role: string }[] }).employees || []}
-											onChange={v => handleFieldChange('employees', v)}
-										/>
-									) : (
-										selectedOrder.employees && selectedOrder.employees.length > 0 ? (
+											onChange={v => handleFieldChange('employees', v)} />
+										:
+										selectedOrder.employees && selectedOrder.employees.length > 0 ?
 											<ul className='flex flex-col gap-1'>
 												{selectedOrder.employees.map((er: EmployeeRole, i: number) => (
 													<li key={i} className='flex gap-2 text-lg'>
-														<span>{er.name}</span>
+														<span>{er.employee.name}</span>
 														<span className='opacity-50'>— {er.role}</span>
 													</li>
 												))}
 											</ul>
-										) : (
-											<p className='opacity-50'>Нет сотрудников</p>
-										)
-									)}
+											: <p className='opacity-50'>Нет сотрудников</p>
+
+									}
 								</div>
+
+								<div className='mb-3'>
+									<p className='text-sm opacity-60 mb-2'>Заметки</p>
+									{isEditing ?
+										<Textarea
+											value={editedOrder.description || ''}
+											onChange={(e) => handleFieldChange('description', e.target.value)}
+											placeholder="Заметки"
+											rows={4}
+											className='md:text-xl p-3 mb-3' />
+										:
+										selectedOrder.description ?
+											<h2 className='text-xl whitespace-pre-line'>{selectedOrder.description}</h2>
+											:
+											<h2 className='text-xl opacity-50'>Нет заметок</h2>
+									}
+								</div>
+
 							</div>
 						</>
 					)}
@@ -242,19 +250,16 @@ function OrdersPage() {
 										</FieldLabel>
 										<SearchCombobox<Client>
 											placeholder="Начните вводить имя клиента..."
-											onSearch={async (query) => {
-												const resp = await axios.get(ApiRoutes.getClientsURL(), {
-													params: { name: query, limit: 10 },
-													withCredentials: true,
-												});
-												return resp.data.clients;
-											}}
+											onSearch={async (query) => await axios.get(ApiRoutes.getClientsURL(), {
+												params: { name: query, limit: 10 },
+												withCredentials: true,
+											}).then(r => r.data.clients)
+											}
 											renderOption={(client: Client) => (
-													<span>{client.name}</span>
+												<span>{client.name}</span>
 											)}
 											getLabel={(client: Client) => client.name}
-											onSelect={(client: Client) => handleFieldChange('client_id', client?.id ?? '')}
-										/>
+											onSelect={(client: Client) => handleFieldChange('client_id', client?.id ?? '')} />
 									</Field>
 									<Field>
 										<FieldLabel className='text-xl'>
@@ -262,8 +267,7 @@ function OrdersPage() {
 										</FieldLabel>
 										<DateTimePicker
 											value={newOrder.datetime || ''}
-											onChange={v => handleFieldChange('datetime', v)}
-										/>
+											onChange={v => handleFieldChange('datetime', v)} />
 									</Field>
 									<Field>
 										<FieldLabel className='text-xl'>Длительность (ч.)</FieldLabel>
@@ -273,8 +277,7 @@ function OrdersPage() {
 											value={newOrder.duration ?? ''}
 											onChange={e => handleFieldChange('duration', e.target.value ? Number(e.target.value) : undefined)}
 											placeholder="Часов"
-											className='md:text-xl py-6 w-32'
-										/>
+											className='md:text-xl py-6 w-32' />
 									</Field>
 									<Field>
 										<FieldLabel className='text-xl'>
@@ -285,8 +288,7 @@ function OrdersPage() {
 											value={newOrder.address || ''}
 											onChange={e => handleFieldChange('address', e.target.value)}
 											placeholder="Адрес"
-											className='md:text-xl py-6'
-										/>
+											className='md:text-xl py-6' />
 									</Field>
 									<Field>
 										<FieldLabel className='text-xl'>
@@ -294,9 +296,14 @@ function OrdersPage() {
 										</FieldLabel>
 										<EmployeeRolesEditor
 											employees={newOrder.employees || []}
-											onChange={v => handleFieldChange('employees', v)}
-										/>
+											onChange={v => handleFieldChange('employees', v)} />
 									</Field>
+									<Textarea
+										value={newOrder.description || ''}
+										onChange={(e) => handleFieldChange('description', e.target.value)}
+										placeholder="Заметки"
+										rows={4}
+										className='md:text-xl p-3 mb-3' />
 								</div>
 							</div>
 							<div className='flex gap-2 h-fit mt-6'>

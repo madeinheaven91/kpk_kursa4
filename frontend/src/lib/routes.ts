@@ -24,7 +24,7 @@ export abstract class ApiRoutes {
 	public static getEmployeesURL = () => `${this.root}/employees`;
 	public static getEmployeeURL = (id: string) => `${this.root}/employees/${id}`;
 	public static getOrdersURL = () => `${this.root}/orders`;
-	public static getOrderURL = (id: number) => `${this.root}/orders${id}`;
+	public static getOrderURL = (id: number) => `${this.root}/orders/${id}`;
 	public static getAccountsURL = () => `${this.root}/accounts`;
 	public static getAccountURL = (id: string) => `${this.root}/accounts/${id}`;
 

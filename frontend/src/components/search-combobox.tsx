@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, XIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface SearchComboboxProps<T> {
@@ -75,16 +74,6 @@ export function SearchCombobox<T>({
 		setQuery(getLabel(item));
 		setOpen(false);
 		onSelect(item);
-	};
-
-	const handleClear = () => {
-		setSelected(null);
-		setQuery("");
-		setResults([]);
-		setOpen(false);
-		// Notify parent of deselection by calling onSelect with a sentinel —
-		// instead we expose a separate onClear prop if needed, but a null cast works too
-		onSelect(null as unknown as T);
 	};
 
 	return (

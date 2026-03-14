@@ -1,19 +1,13 @@
-import {
-	Loader2,
-	PlusIcon,
-	SaveIcon,
-	TrashIcon,
-	XIcon
-} from "lucide-react";
 import React, { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { AccountsTable, DeleteDialog, SearchBar } from "./components";
-import { useAccountMutations, useAccounts } from "./hooks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AccountRoleV, displayRole, type AccountRole } from "@/lib/api/accounts";
+import { AccountsTable, DeleteDialog, SearchBar } from "./components";
+import { useAccountMutations, useAccounts } from "./hooks";
+import { PlusIcon, TrashIcon, XIcon, Loader2, SaveIcon } from "lucide-react";
 
 function AccountsPage() {
 	const {
@@ -80,8 +74,7 @@ function AccountsPage() {
 									page={accountsPage}
 									totalPages={accountsPageTotal}
 									total={accountsTotal}
-									onPageChange={accountsSetPage}
-								/>
+									onPageChange={accountsSetPage} />
 						}
 					</div>
 				</div>
@@ -122,8 +115,7 @@ function AccountsPage() {
 											value={newAccount.login || ''}
 											onChange={(e) => handleFieldChange('login', e.target.value)}
 											placeholder="Имя"
-											className='md:text-xl py-6'
-										/>
+											className='md:text-xl py-6' />
 									</Field>
 									<Field>
 										<FieldLabel htmlFor='input-name' className='text-xl'>
@@ -136,8 +128,7 @@ function AccountsPage() {
 											value={newAccount.password || ''}
 											onChange={(e) => handleFieldChange('password', e.target.value)}
 											placeholder="Пароль"
-											className='md:text-xl py-6'
-										/>
+											className='md:text-xl py-6' />
 									</Field>
 									<Field>
 										<FieldLabel className='text-xl'>
@@ -145,8 +136,7 @@ function AccountsPage() {
 										</FieldLabel>
 										<Select
 											value={newAccount.role || ''}
-											onValueChange={(value) => handleFieldChange('role', value as AccountRole)}
-										>
+											onValueChange={(value) => handleFieldChange('role', value as AccountRole)} >
 											<SelectTrigger className='md:text-xl py-6'>
 												<SelectValue placeholder="Выберите роль" />
 											</SelectTrigger>
@@ -161,13 +151,11 @@ function AccountsPage() {
 							<div className='flex gap-2 h-fit'>
 								<Button
 									onClick={handleSave}
-									disabled={isSaving}
-								>
-									{isSaving ? (
+									disabled={isSaving} >
+									{isSaving ?
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									) : (
-										<SaveIcon className="mr-2 h-4 w-4" />
-									)}
+										:
+										<SaveIcon className="mr-2 h-4 w-4" />}
 									Сохранить
 								</Button>
 							</div>

@@ -2,7 +2,6 @@ import { EmptyRows } from "@/components/empty-rows";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Table,
     TableBody,
@@ -40,13 +39,11 @@ const Pagination = ({ page, total, onPageChange }: {
 		<div className='flex justify-center gap-10 items-center'>
 			<ChevronLeft
 				onClick={() => onPageChange(page - 1)}
-				className={`cursor-pointer transition-opacity ${isFirstPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`}
-			/>
+				className={`cursor-pointer transition-opacity ${isFirstPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`} />
 			<p>{page} из {total}</p>
 			<ChevronRight
 				onClick={() => onPageChange(page + 1)}
-				className={`cursor-pointer transition-opacity ${isLastPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`}
-			/>
+				className={`cursor-pointer transition-opacity ${isLastPage ? 'opacity-50 pointer-events-none' : 'hover:opacity-70'}`} />
 		</div>
 	);
 };
@@ -69,36 +66,28 @@ const FilterBar = ({ filter, onApply, onClear }: {
 					<span className='text-sm opacity-60'>Клиент</span>
 					<SearchCombobox<Client>
 						placeholder="Начните вводить имя"
-						onSearch={async (query) => {
-							const resp = await axios.get(ApiRoutes.getClientsURL(), {
-								params: { name: query, limit: 10 },
+						onSearch={async (q) => await axios.get(ApiRoutes.getClientsURL(), {
+								params: { name: q, limit: 10 },
 								withCredentials: true,
-							});
-							return resp.data.clients;
-						}}
-						renderOption={(client: Client) => (
-								<span>{client.name}</span>
-						)}
+							}).then(r => r.data.clients)
+						}
+						renderOption={(client: Client) => client.name}
 						getLabel={(client: Client) => client.name}
-						onSelect={(client: Client) => handleChange('clientID', client?.id ?? '')}
+						onSelect={(client: Client) => handleChange('client_id', client?.id ?? '')}
 					/>
 				</div>
 				<div className='flex flex-col w-full gap-1'>
 					<span className='text-sm opacity-60'>Сотрудник</span>
 					<SearchCombobox<Employee>
 						placeholder="Начните вводить имя"
-						onSearch={async (query) => {
-							const resp = await axios.get(ApiRoutes.getEmployeesURL(), {
-								params: { name: query, limit: 10 },
+						onSearch={async (q) => await axios.get(ApiRoutes.getEmployeesURL(), {
+								params: { name: q, limit: 10 },
 								withCredentials: true,
-							});
-							return resp.data.employees;
-						}}
-						renderOption={(e: Employee) => (
-								<span>{e.name}</span>
-						)}
+							}).then(r => r.data.employees)
+						}
+						renderOption={(e: Employee) => e.name}
 						getLabel={(e: Employee) => e.name}
-						onSelect={(e: Employee) => handleChange('employeeID', e?.id ?? '')}
+						onSelect={(e: Employee) => handleChange('employee_id', e?.id ?? '')}
 					/>
 				</div>
 			</div>
@@ -149,7 +138,7 @@ const OrdersTable = ({ orders, selectedOrder, handleSelectOrder, page, totalPage
 						<TableCell className={StatusClass(order.status)}>{order.time}</TableCell>
 						<TableCell className={StatusClass(order.status)}>{order.duration}</TableCell>
 						<TableCell className={`max-w-[140px] truncate ${StatusClass(order.status)}`}>
-							{raw.client?.name || <span className='opacity-50'>—</span>}
+							{raw.client?.name}
 						</TableCell>
 						<TableCell className={`max-w-[180px] truncate ${StatusClass(order.status)}`}>{order.address}</TableCell>
 					</TableRow>

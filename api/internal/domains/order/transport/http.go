@@ -51,6 +51,7 @@ func (h *Handler) GetAllOrders(c *gin.Context) {
 	// Parse filter params
 	filter := order.FilterParams{}
 	filter.ClientID = c.Query("client_id")
+	filter.EmployeeID = c.Query("employee_id")
 	startMin := c.Query("start_min")
 	if sm, err := time.Parse("02.01.2006", startMin); err == nil {
 		filter.StartMin = &sm

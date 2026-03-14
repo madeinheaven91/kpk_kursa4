@@ -19,6 +19,7 @@ func NewRepo(db *gorm.DB) order.Repo {
 
 func (r UserOrderRepo) GetAll(ctx context.Context, limit, offset int, filter order.FilterParams) []models.Order {
 	base := r.db.WithContext(ctx).
+		Model(&models.Order{}).
 		Preload("Client", nil).
 		Preload("EmployeeOrders.Employee", nil).
 		Order("datetime desc").
@@ -34,9 +35,10 @@ func (r UserOrderRepo) GetAll(ctx context.Context, limit, offset int, filter ord
 		base = base.Where("datetime <= ?", filter.StartMax)
 	}
 	if filter.EmployeeID != "" {
-		base = base.Where("employee_orders.employee_id = ?", filter.EmployeeID)
+		base = base.
+			Joins("JOIN employee_orders on employee_orders.order_id = orders.id").
+			Where("employee_orders.employee_id = ?", filter.EmployeeID)
 	}
-
 	var orders []models.Order
 	if err := base.Find(&orders).Error; err != nil {
 		return nil
@@ -97,7 +99,10 @@ func (r UserOrderRepo) RemoveEmployeeFromOrder(ctx context.Context, orderID int,
 }
 
 func (r UserOrderRepo) Total(ctx context.Context, filter order.FilterParams) (int64, error) {
-	base := gorm.G[models.Order](r.db).Preload("Client", nil)
+	base := r.db.WithContext(ctx).
+		Model(&models.Order{}).
+		Preload("Client", nil).
+		Preload("EmployeeOrders.Employee", nil)
 	if filter.ClientID != "" {
 		base = base.Where("client_id = ?", filter.ClientID)
 	}
@@ -107,5 +112,13 @@ func (r UserOrderRepo) Total(ctx context.Context, filter order.FilterParams) (in
 	if filter.StartMax != nil {
 		base = base.Where("datetime <= ?", filter.StartMax)
 	}
-	return base.Count(ctx, "id")
+	if filter.EmployeeID != "" {
+		base = base.
+			Joins("JOIN employee_orders on employee_orders.order_id = orders.id").
+			Where("employee_orders.employee_id = ?", filter.EmployeeID)
+	}
+
+	var count int64
+	res := base.Count(&count)
+	return count, res.Error
 }

@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/madeinheaven91/anim-crm-api/internal/domains/order"
@@ -42,7 +41,6 @@ func (r UserOrderRepo) GetAll(ctx context.Context, limit, offset int, filter ord
 	if err := base.Find(&orders).Error; err != nil {
 		return nil
 	}
-	fmt.Println(orders);
 	return orders
 }
 

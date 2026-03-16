@@ -36,7 +36,7 @@ func (h *Handler) SetupRouter(r *gin.RouterGroup, s services.AuthService) {
 	manage := auth.Group("")
 	manage.Use(s.RequireRoles("admin", "manager"))
 	manage.POST("/orders", h.AddOrder)
-	// manage.PUT("/orders/:id", h.UpdateOrder)
+	manage.PUT("/orders/:id", h.UpdateOrder)
 	manage.DELETE("/orders/:id", h.DeleteOrder)
 
 	// Employee management within orders - requires manager or admin
@@ -112,40 +112,38 @@ func (h *Handler) AddOrder(c *gin.Context) {
 	c.JSON(201, order)
 }
 
-// UpdateOrder handles PUT /orders/:id
-// func (h *OrderHandler) UpdateOrder(c *gin.Context) {
-// 	id := c.Param("id")
-// 	claims := c.MustGet("claims").(*account.CustomClaims)
-//
-// 	// Check if order exists
-// 	existingOrder := h.orderUC.Get(c.Request.Context(), id)
-// 	if existingOrder == nil {
-// 		c.AbortWithStatusJSON(404, errors.NewError("order not found"))
-// 		return
-// 	}
-//
-// 	// Bind JSON
-// 	var order models.UpdateOrder
-// 	if err := c.ShouldBindJSON(&order); err != nil {
-// 		c.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
-// 		return
-// 	}
-//
-// 	// Only admin can update orders (or add more specific rules)
-// 	if claims.Role != "admin" {
-// 		c.AbortWithStatusJSON(403, errors.NewError("forbidden"))
-// 		return
-// 	}
-//
-// 	// Update order
-// 	err := h.orderUC.Update(c.Request.Context(), &order)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
-// 		return
-// 	}
-//
-// 	c.Status(204)
-// }
+func (h *Handler) UpdateOrder(c *gin.Context) {
+	id := c.Param("id")
+	claims := c.MustGet("claims").(*account.CustomClaims)
+
+	// Check if order exists
+	existingOrder := h.orderUC.Get(c.Request.Context(), id)
+	if existingOrder == nil {
+		c.AbortWithStatusJSON(404, errors.NewError("order not found"))
+		return
+	}
+
+	// Bind JSON
+	var order models.UpdateOrderForm
+	if err := c.ShouldBindJSON(&order); err != nil {
+		c.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	if claims.Role != "admin" && claims.Role != "manager" {
+		c.AbortWithStatusJSON(403, errors.NewError("forbidden"))
+		return
+	}
+
+	// Update order
+	o, err := h.orderUC.Update(c.Request.Context(), existingOrder.ID, &order)
+	if err != nil {
+		c.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, o)
+}
 
 // DeleteOrder handles DELETE /orders/:id
 func (h *Handler) DeleteOrder(c *gin.Context) {

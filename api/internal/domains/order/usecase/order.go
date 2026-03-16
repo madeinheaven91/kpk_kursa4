@@ -2,7 +2,9 @@ package usecases
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/madeinheaven91/anim-crm-api/internal/domains/order"
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
@@ -68,8 +70,33 @@ func (u *OrderUC) Delete(ctx context.Context, login string) error {
 	return u.repo.Delete(ctx, login)
 }
 
-func (u *OrderUC) Update(ctx context.Context, emp *models.Order) error {
-	return u.repo.Update(ctx, emp)
+func (u *OrderUC) Update(ctx context.Context, orderID int, form *models.UpdateOrderForm) (*models.Order, error) {
+	orderIDStr := strconv.Itoa(orderID)
+	order := u.repo.Get(ctx, orderIDStr)
+	if order == nil {
+        return nil, fmt.Errorf("order not found")
+    }
+
+	for _, e := range order.EmployeeOrders {
+        err := u.repo.RemoveEmployeeFromOrder(ctx, orderID, e.EmployeeID)
+        if err != nil {
+            log.Println(err)
+        }
+    }
+
+	for _, e := range form.Employees {
+		err := u.repo.AddEmployeeToOrder(ctx, orderID, e.ID, e.Role)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	order.Duration = form.Duration;
+	order.Datetime = form.Datetime;
+	order.Address = form.Address;
+	order.Description = form.Description;
+
+	return order, u.repo.Update(ctx, order)
 }
 
 func (u *OrderUC) AddEmployeeToOrder(ctx context.Context, o *models.Order, emp *models.EmployeeRole) error {

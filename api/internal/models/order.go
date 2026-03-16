@@ -89,3 +89,11 @@ func (a AddOrderForm) ToOrder() (*Order, []EmployeeRole) {
 		Description: a.Description,
 	}, a.Employees
 }
+
+type UpdateOrderForm struct {
+	Employees   []EmployeeRole `json:"employees"`
+	Datetime    JsonTime       `json:"datetime"`
+	Duration    *int           `json:"duration"`
+	Address     string         `json:"address"`
+	Description *string        `json:"description"`
+}

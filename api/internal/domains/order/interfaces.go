@@ -33,7 +33,7 @@ type UC interface {
 	GetAll(ctx context.Context, limit, offset int, filter FilterParams) []models.OrderFull
 	Add(ctx context.Context, form models.AddOrderForm) (*models.Order, error)
 	Delete(ctx context.Context, id string) error
-	Update(ctx context.Context, order *models.Order) error
+	Update(ctx context.Context, orderID int, form *models.UpdateOrderForm) (*models.Order, error)
 
 	AddEmployeeToOrder(ctx context.Context, order *models.Order, employee *models.EmployeeRole) error
 	RemoveEmployeeFromOrder(ctx context.Context, order *models.Order, employee *models.Employee) error

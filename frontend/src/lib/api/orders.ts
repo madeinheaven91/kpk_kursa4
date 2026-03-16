@@ -2,7 +2,7 @@ import { format, parse } from "date-fns";
 import type { Client } from "./clients";
 import { ApiRoutes } from "../routes";
 import type { DateRange } from "react-day-picker";
-import type { EmployeeRole } from "./employees";
+import type { EmployeeRole, EmployeeRoleTrunc } from "./employees";
 
 type Status = 'upcoming' | 'ongoing' | 'done';
 
@@ -123,12 +123,51 @@ const FetchOrdersFiltered = (limit: number = 1, page: number = 1, filter: Filter
 			params: {
 				limit: limit,
 				offset: (page - 1) * limit,
-				client_id: filter.client_id || undefined,
+				client_id: filter.client_id ?? undefined,
 				start_min: filter.dateRange?.from ? format(filter.dateRange.from, "dd.MM.yyyy") : undefined,
 				start_max: filter.dateRange?.to ? format(filter.dateRange.to, "dd.MM.yyyy") : undefined,
-				employee_id: filter.employee_id || undefined,
+				employee_id: filter.employee_id ?? undefined,
 			}
 		}
 )
 
-export { OrdersToRepr, StatusClass, type Order, type OrderRepr, type OrdersResponse, FetchClientOrders, FetchEmployeeOrders, FetchOrdersFiltered, type FilterParams };
+interface AddOrderForm {
+	client_id: string;
+	employees: EmployeeRole[];
+	datetime: string; // ISO or formatted string
+	duration?: number;
+	address: string;
+	description?: string;
+}
+
+function FinalizeAddForm(order: AddOrderForm) {
+    return {
+        client_id: order.client_id,
+        employees: order.employees?.map(e => ({ id: e.employee.id, role: e.role })) as EmployeeRoleTrunc[],
+        datetime: order.datetime,
+        duration: order.duration,
+        address: order.address,
+        description: order.description
+    }
+}
+
+
+interface UpdateOrderForm {
+	employees?: EmployeeRoleTrunc[];
+	datetime?: string; // ISO or formatted string
+	duration?: number;
+	address?: string;
+	description?: string;
+}
+
+function OrderToUpdate(order: Partial<Order>): UpdateOrderForm {
+	return {
+        employees: order.employees?.map(e => ({ id: e.employee.id, role: e.role })) as EmployeeRoleTrunc[],
+        datetime: order.datetime,
+        duration: order.duration,
+        address: order.address,
+        description: order.description
+	}
+}
+
+export { OrdersToRepr, StatusClass, type Order, type OrderRepr, type OrdersResponse, FetchClientOrders, FetchEmployeeOrders, FetchOrdersFiltered, type FilterParams, OrderToUpdate, type AddOrderForm, FinalizeAddForm };

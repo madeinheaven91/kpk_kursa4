@@ -3,20 +3,10 @@ import { ApiRoutes } from "@/lib/routes";
 import axios from "axios";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { FetchOrdersFiltered, type FilterParams, type Order, type OrdersResponse, OrderToUpdate, type AddOrderForm, FinalizeAddForm } from "@/lib/api/orders";
 
 const ORDER_PAGE_LIMIT = 15;
 
-interface AddOrderForm {
-	client_id: string;
-	employees: EmployeeRoleTrunc[];
-	datetime: string; // ISO or formatted string
-	duration?: number;
-	address: string;
-	description?: string;
-}
-
-import { FetchOrdersFiltered, type FilterParams, type Order, type OrdersResponse } from "@/lib/api/orders";
-import type { EmployeeRoleTrunc } from "@/lib/api/employees";
 
 function useOrders() {
 	const { result, error, loading, fetchData } = useAxios<OrdersResponse>();
@@ -35,7 +25,7 @@ function useOrders() {
 	const handleApplyFilter = useCallback((newFilter: FilterParams) => {
 		setFilter(newFilter);
 		setPage(1);
-		fetchData(FetchOrdersFiltered(ORDER_PAGE_LIMIT, page, filter));	
+		fetchData(FetchOrdersFiltered(ORDER_PAGE_LIMIT, page, newFilter));	
 	}, [fetchData]);
 
 	const handleClearFilter = useCallback(() => {
@@ -121,7 +111,7 @@ function useOrderMutations(onSuccess: () => void) {
 			if (prevMode === Mode.Editing && selectedOrder) {
 				const resp = await axios.put(
 					ApiRoutes.getOrderURL(selectedOrder.id),
-					editedOrder,
+					OrderToUpdate(editedOrder),
 					{ withCredentials: true }
 				);
 				if (resp.status === 200) {
@@ -138,7 +128,7 @@ function useOrderMutations(onSuccess: () => void) {
 				}
 				const resp = await axios.post(
 					ApiRoutes.getOrdersURL(),
-					newOrder,
+					FinalizeAddForm(newOrder),
 					{ withCredentials: true }
 				);
 				setSelectedOrder(resp.data);
@@ -200,4 +190,4 @@ function useOrderMutations(onSuccess: () => void) {
 	};
 }
 
-export { ORDER_PAGE_LIMIT, useOrderMutations, useOrders, type AddOrderForm, type EmployeeRoleTrunc as EmployeeRole, type FilterParams };
+export { ORDER_PAGE_LIMIT, useOrderMutations, useOrders, type FilterParams };

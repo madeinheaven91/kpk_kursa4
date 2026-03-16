@@ -37,6 +37,7 @@ const AddEmployee = (employee: Employee) => ({
 	}
 })
 
+
 const DeleteEmployee = (id: string) => ({ url: ApiRoutes.getEmployeeURL(id), method: "DELETE" })
 
 export { AddEmployee, DeleteEmployee, FetchEmployees, type Employee, type EmployeeRole, type EmployeeRoleTrunc, type EmployeesResponse };

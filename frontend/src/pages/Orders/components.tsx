@@ -11,10 +11,10 @@ import {
     TableHeader, TableRow } from "@/components/ui/table";
 import { OrdersToRepr, StatusClass, type Order } from "@/lib/api/orders";
 import { ChevronDownIcon, ChevronLeft, ChevronRight, Loader2, PlusIcon, TrashIcon, XIcon } from "lucide-react";
-import type { EmployeeRole, FilterParams } from "./hooks";
+import type { FilterParams } from "./hooks";
 import { ORDER_PAGE_LIMIT } from "./hooks";
 import { SearchCombobox } from "@/components/search-combobox";
-import type { Employee } from "@/lib/api/employees";
+import type { Employee, EmployeeRole } from "@/lib/api/employees";
 import { ApiRoutes } from "@/lib/routes";
 import axios from "axios";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -65,6 +65,7 @@ const FilterBar = ({ filter, onApply, onClear }: {
 				<div className='flex flex-col w-full gap-1'>
 					<span className='text-sm opacity-60'>Клиент</span>
 					<SearchCombobox<Client>
+						query=""
 						placeholder="Начните вводить имя"
 						onSearch={async (q) => await axios.get(ApiRoutes.getClientsURL(), {
 								params: { name: q, limit: 10 },
@@ -79,6 +80,7 @@ const FilterBar = ({ filter, onApply, onClear }: {
 				<div className='flex flex-col w-full gap-1'>
 					<span className='text-sm opacity-60'>Сотрудник</span>
 					<SearchCombobox<Employee>
+						query=""
 						placeholder="Начните вводить имя"
 						onSearch={async (q) => await axios.get(ApiRoutes.getEmployeesURL(), {
 								params: { name: q, limit: 10 },
@@ -161,11 +163,12 @@ const EmployeeRolesEditor = ({ employees, onChange }: {
     employees: EmployeeRole[];
     onChange: (employees: EmployeeRole[]) => void;
 }) => {
-    const handleAdd = () => onChange([...employees, { id: '', role: '' }]);
+    const handleAdd = () => onChange([...employees, {} as EmployeeRole]);
     const handleRemove = (i: number) => onChange(employees.filter((_, idx) => idx !== i));
-    const handleUpdate = (i: number, field: keyof EmployeeRole, value: string) => {
+    const handleUpdate = (i: number, field: keyof EmployeeRole, value: any) => {
         const updated = employees.map((e, idx) => idx === i ? { ...e, [field]: value } : e);
         onChange(updated);
+		console.log(updated);
     };
 
     return (
@@ -173,6 +176,7 @@ const EmployeeRolesEditor = ({ employees, onChange }: {
             {employees.map((e, i) => (
                 <div key={i} className='flex gap-2 items-center relative z-10'> {/* ← relative + z-10 */}
                     <SearchCombobox<Employee>
+						query={e.employee?.name ?? ''}
                         placeholder="Начните вводить имя сотрудника..."
                         onSearch={async (query) => {
                             const resp = await axios.get(ApiRoutes.getEmployeesURL(), {
@@ -185,7 +189,7 @@ const EmployeeRolesEditor = ({ employees, onChange }: {
                                 <span>{emp.name}</span>
                         )}
                         getLabel={(emp: Employee) => emp.name}
-                        onSelect={(emp: Employee) => handleUpdate(i, 'id', emp?.id ?? '')}
+                        onSelect={(emp: Employee) => handleUpdate(i, 'employee', emp)}
 						className='w-full'
                     />
 					<Input className='w-1/3' value={e.role} onChange={v => handleUpdate(i, 'role', v.target.value)} placeholder="Роль" />

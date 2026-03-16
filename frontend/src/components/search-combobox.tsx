@@ -14,6 +14,7 @@ interface SearchComboboxProps<T> {
 	placeholder?: string;
 	className?: string;
 	debounceMs?: number;
+	query: string;
 }
 
 export function SearchCombobox<T>({
@@ -24,8 +25,9 @@ export function SearchCombobox<T>({
 	placeholder = "Поиск...",
 	className = "",
 	debounceMs = 300,
+	query: q = "",
 }: SearchComboboxProps<T>) {
-	const [query, setQuery] = useState("");
+	const [query, setQuery] = useState(q);
 	const [results, setResults] = useState<T[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [open, setOpen] = useState(false);

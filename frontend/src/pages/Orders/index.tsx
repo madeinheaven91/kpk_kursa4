@@ -197,7 +197,7 @@ function OrdersPage() {
 									<p className='text-sm opacity-60 mb-2'>Сотрудники</p>
 									{isEditing ?
 										<EmployeeRolesEditor
-											employees={(editedOrder as { employees?: { id: string; role: string }[] }).employees || []}
+											employees={editedOrder.employees || []}
 											onChange={v => handleFieldChange('employees', v)} />
 										:
 										selectedOrder.employees && selectedOrder.employees.length > 0 ?

@@ -8,13 +8,13 @@ import (
 type Order struct {
 	ID          int      `json:"id" gorm:"primaryKey;autoIncrement"`
 	ClientID    string   `json:"client_id" gorm:"type:uuid"`
-	Client      *Client  `json:"-" gorm:"foreignKey:ClientID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	Client      *Client  `json:"-" gorm:"foreignKey:ClientID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Datetime    JsonTime `json:"datetime" gorm:"type:timestamp;not null"`
 	Duration    *int     `json:"duration"`
 	Address     string   `json:"address" gorm:"not null"`
 	Description *string  `json:"description"`
 
-	EmployeeOrders []EmployeeOrders `gorm:"foreignKey:OrderID" json:"-"`
+	EmployeeOrders []EmployeeOrders `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE;" json:"-"`
 }
 
 type EmployeeOrders struct {

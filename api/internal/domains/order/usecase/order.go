@@ -39,12 +39,13 @@ func (u *OrderUC) GetAll(ctx context.Context, limit, offset int, filter order.Fi
 	for i, order := range orders {
 		employees := u.repo.GetEmployees(ctx, order.ID)
 		res[i] = models.OrderFull{
-			ID:        order.ID,
-			Client:    order.Client,
-			Employees: employees,
-			Datetime:  order.Datetime,
-			Duration:  order.Duration,
-			Address:   order.Address,
+			ID:          order.ID,
+			Client:      order.Client,
+			Employees:   employees,
+			Datetime:    order.Datetime,
+			Duration:    order.Duration,
+			Address:     order.Address,
+			Description: order.Description,
 		}
 
 	}
@@ -74,27 +75,32 @@ func (u *OrderUC) Update(ctx context.Context, orderID int, form *models.UpdateOr
 	orderIDStr := strconv.Itoa(orderID)
 	order := u.repo.Get(ctx, orderIDStr)
 	if order == nil {
-        return nil, fmt.Errorf("order not found")
-    }
+		return nil, fmt.Errorf("order not found")
+	}
 
 	for _, e := range order.EmployeeOrders {
-        err := u.repo.RemoveEmployeeFromOrder(ctx, orderID, e.EmployeeID)
-        if err != nil {
-            log.Println(err)
-        }
-    }
+		err := u.repo.RemoveEmployeeFromOrder(ctx, orderID, e.EmployeeID)
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println("Deleted", e.Employee.Name)
+	}
 
 	for _, e := range form.Employees {
 		err := u.repo.AddEmployeeToOrder(ctx, orderID, e.ID, e.Role)
 		if err != nil {
 			log.Println(err)
 		}
+		log.Println("Added", e.ID)
 	}
 
-	order.Duration = form.Duration;
-	order.Datetime = form.Datetime;
-	order.Address = form.Address;
-	order.Description = form.Description;
+	order.ID = orderID
+	order.Duration = form.Duration
+	order.Datetime = form.Datetime
+	order.Address = form.Address
+	order.Description = form.Description
+
+	log.Println(order)
 
 	return order, u.repo.Update(ctx, order)
 }

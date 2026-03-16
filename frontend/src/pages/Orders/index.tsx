@@ -249,6 +249,7 @@ function OrdersPage() {
 											Клиент <span className='text-red-500'>*</span>
 										</FieldLabel>
 										<SearchCombobox<Client>
+											query={''}
 											placeholder="Начните вводить имя клиента..."
 											onSearch={async (query) => await axios.get(ApiRoutes.getClientsURL(), {
 												params: { name: query, limit: 10 },

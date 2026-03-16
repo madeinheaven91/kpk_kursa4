@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import type { Client } from "@/lib/api/clients";
 import { OrdersToRepr, StatusClass } from "@/lib/api/orders";
 import { formatPhoneNumber } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Loader2, SearchIcon, Table, XIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, SearchIcon, XIcon } from "lucide-react";
 import { CLIENT_PAGE_LIMIT, ORDER_PAGE_LIMIT, type Order } from "./hooks";
-import { TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableFooter } from "@/components/ui/table";
 
 const SearchBar = ({ search, onSearchChange, onSearch, onClear }: {
 	search: string;

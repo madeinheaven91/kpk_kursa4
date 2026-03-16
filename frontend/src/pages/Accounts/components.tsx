@@ -3,6 +3,7 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
+	Table,
 	TableBody,
 	TableCell,
 	TableFooter,
@@ -11,7 +12,7 @@ import {
 	TableRow
 } from "@/components/ui/table";
 import { displayRole, type Account } from "@/lib/api/accounts";
-import { ChevronLeft, ChevronRight, Loader2, SearchIcon, Table, XIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, SearchIcon, XIcon } from "lucide-react";
 import { ACCOUNTS_PAGE_LIMIT } from "./hooks";
 
 // Пустые строчки для заполнения таблицы сотрудников

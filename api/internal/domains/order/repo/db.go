@@ -47,7 +47,10 @@ func (r UserOrderRepo) GetAll(ctx context.Context, limit, offset int, filter ord
 }
 
 func (r UserOrderRepo) Get(ctx context.Context, id string) *models.Order {
-	res, err := gorm.G[models.Order](r.db).Preload("Client", nil).Where("id = ?", id).First(ctx)
+	res, err := gorm.G[models.Order](r.db).
+		Preload("Client", nil).
+		Preload("EmployeeOrders.Employee", nil).
+		Where("id = ?", id).First(ctx)
 	if err != nil {
 		return nil
 	}
@@ -64,7 +67,10 @@ func (r UserOrderRepo) Delete(ctx context.Context, id string) error {
 }
 
 func (r UserOrderRepo) Update(ctx context.Context, order *models.Order) error {
-	_, err := gorm.G[models.Order](r.db).Where("id = ?", order.ID).Updates(ctx, *order)
+	_, err := gorm.G[models.Order](r.db).
+		Where("id = ?", order.ID).
+		Select("duration", "datetime", "address", "description").
+		Updates(ctx, *order)
 	return err
 }
 

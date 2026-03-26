@@ -5,18 +5,19 @@ import {
 	SidebarFooter,
 	SidebarHeader,
 } from "@/components/ui/sidebar";
-import { displayRole, logout, type Account, Logout } from "@/lib/api/accounts";
+import { displayRole, logout, Logout, type AuthState } from "@/lib/api/accounts";
 import { useAppDispatch } from "@/hooks/store";
 import { AppRoutes } from "@/lib/routes";
-import { BookUserIcon, CalendarIcon, CircleUserRoundIcon, LogOutIcon, PenLineIcon, ScrollTextIcon, ShieldUserIcon, UserIcon } from "lucide-react";
+import { BookUserIcon, CalendarIcon, CircleUserRoundIcon, LogOutIcon, ScrollTextIcon, ShieldUserIcon, UserIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { permRoleToNumber } from "@/lib/utils";
 
 interface SidebarProps {
-	account: Account
+	auth: AuthState
 }
 
-function AppSidebar({ account }: SidebarProps) {
+function AppSidebar({ auth }: SidebarProps) {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const onLogout = () => {
@@ -24,6 +25,8 @@ function AppSidebar({ account }: SidebarProps) {
 		navigate(AppRoutes.getSignInURL());
 		dispatch(logout());
 	};
+
+	const account = auth.account!;
 
 	return (
 		<Sidebar>
@@ -35,23 +38,20 @@ function AppSidebar({ account }: SidebarProps) {
 				<SidebarNavItem to={AppRoutes.getDashboardURL("/app")} icon={<CalendarIcon />} title='Главная' />
 				<SidebarNavItem to={AppRoutes.getClientsURL("/app")} icon={<BookUserIcon />} title='Клиенты' />
 				<SidebarNavItem to={AppRoutes.getOrdersURL("/app")} icon={<ScrollTextIcon />} title='Заказы' />
-				<SidebarNavItem to={AppRoutes.getEmployeesURL("/app")} icon={<UserIcon />} title='Сотрудники' />
-				<SidebarNavItem to={AppRoutes.getAccountsURL("/app")} icon={<ShieldUserIcon />} title='Аккаунты' />
-				<SidebarNavItem to={AppRoutes.getMeURL("/app")} icon={<PenLineIcon />} title='Личный кабинет' />
+				{permRoleToNumber(account.role) > 0 && <SidebarNavItem to={AppRoutes.getEmployeesURL("/app")} icon={<UserIcon />} title='Сотрудники' />}
+				{permRoleToNumber(account.role) === 2 && <SidebarNavItem to={AppRoutes.getAccountsURL("/app")} icon={<ShieldUserIcon />} title='Аккаунты' />}
 			</SidebarContent>
 			<Separator />
 			<SidebarFooter className='flex flex-row justify-between items-center gap-2'>
-				<NavLink to={AppRoutes.getMeURL("/app")} >
-					<div className='flex items-center gap-2'>
-						<CircleUserRoundIcon size='36' />
-						<div>
-							<p><b>{account.login}</b></p>
-							<p>{displayRole(account.role)}</p>
-						</div>
+				<div className='flex items-center gap-2'>
+					<CircleUserRoundIcon size='36' />
+					<div>
+						<p><b>{account.login}</b></p>
+						<p>{displayRole(account.role)}</p>
 					</div>
-				</NavLink>
-			<LogOutIcon onClick={onLogout} />
-		</SidebarFooter>
+				</div>
+				<LogOutIcon onClick={onLogout} />
+			</SidebarFooter>
 		</Sidebar >
 	)
 }

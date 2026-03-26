@@ -3,6 +3,7 @@ package transport
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/madeinheaven91/anim-crm-api/internal/domains/account"
+	"github.com/madeinheaven91/anim-crm-api/internal/domains/employee"
 	"github.com/madeinheaven91/anim-crm-api/internal/models"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared"
 	"github.com/madeinheaven91/anim-crm-api/internal/shared/errors"
@@ -12,10 +13,11 @@ import (
 type Handler struct {
 	accUC  account.AccountUC
 	authUC account.AuthUC
+	empUC  employee.UC
 }
 
-func NewHandler(acc account.AccountUC, auth account.AuthUC) Handler {
-	return Handler{accUC: acc, authUC: auth}
+func NewHandler(acc account.AccountUC, auth account.AuthUC, emp employee.UC) Handler {
+	return Handler{accUC: acc, authUC: auth, empUC: emp}
 }
 
 func (h Handler) SetupRouter(r *gin.RouterGroup, authService services.AuthService) {
@@ -273,6 +275,12 @@ func (h Handler) Me(c *gin.Context) {
 	claims := cl.(*account.CustomClaims)
 
 	acc := h.accUC.Get(c.Request.Context(), claims.Subject)
+    if acc == nil {
+        c.AbortWithStatusJSON(404, gin.H{"error": "account not found"})
+        return
+    }
 
-	c.JSON(200, acc.ToResponse())
+	emp := h.empUC.GetEmployeeByAccount(c.Request.Context(), acc.Login)
+
+	c.JSON(200, gin.H{"account": acc.ToResponse(), "employee": emp})
 }

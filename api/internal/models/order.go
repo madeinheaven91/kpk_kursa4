@@ -10,11 +10,25 @@ type Order struct {
 	ClientID    string   `json:"client_id" gorm:"type:uuid"`
 	Client      *Client  `json:"-" gorm:"foreignKey:ClientID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Datetime    JsonTime `json:"datetime" gorm:"type:timestamp;not null"`
-	Duration    *int     `json:"duration"`
+	Duration    *float64     `json:"duration" gorm:"type:decimal(10,2)"`
 	Address     string   `json:"address" gorm:"not null"`
 	Description *string  `json:"description"`
+	Price       *float64 `json:"price" gorm:"type:decimal(10,2)"`
 
 	EmployeeOrders []EmployeeOrders `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE;" json:"-"`
+}
+
+func (o Order) ToFull(employees []EmployeeRole) OrderFull {
+	return OrderFull{
+		ID:          o.ID,
+		Client:      o.Client,
+		Employees:   employees,
+		Datetime:    o.Datetime,
+		Duration:    o.Duration,
+		Address:     o.Address,
+		Description: o.Description,
+		Price:       o.Price,
+	}
 }
 
 type EmployeeOrders struct {
@@ -65,35 +79,38 @@ type OrderFull struct {
 	Client      *Client        `json:"client"`
 	Employees   []EmployeeRole `json:"employees"`
 	Datetime    JsonTime       `json:"datetime"`
-	Duration    *int           `json:"duration"`
+	Duration    *float64           `json:"duration"`
 	Address     string         `json:"address"`
 	Description *string        `json:"description"`
+	Price       *float64       `json:"price"`
 }
 
 type AddOrderForm struct {
-	ClientID string `json:"client_id" binding:"required"`
-	// Employees is a list of employee IDs
+	ClientID    string         `json:"client_id" binding:"required"`
 	Employees   []EmployeeRole `json:"employees" binding:"required"`
 	Datetime    JsonTime       `json:"datetime" binding:"required"`
-	Duration    *int           `json:"duration"`
+	Duration    *float64           `json:"duration"`
 	Address     string         `json:"address" binding:"required"`
 	Description *string        `json:"description"`
+	Price       *float64       `json:"price"`
 }
 
 func (a AddOrderForm) ToOrder() (*Order, []EmployeeRole) {
 	return &Order{
-		ClientID: a.ClientID,
-		Address:  a.Address,
-		Datetime: a.Datetime,
-		Duration: a.Duration,
+		ClientID:    a.ClientID,
+		Address:     a.Address,
+		Datetime:    a.Datetime,
+		Duration:    a.Duration,
 		Description: a.Description,
+		Price:       a.Price,
 	}, a.Employees
 }
 
 type UpdateOrderForm struct {
 	Employees   []EmployeeRole `json:"employees"`
 	Datetime    JsonTime       `json:"datetime"`
-	Duration    *int           `json:"duration"`
+	Duration    *float64           `json:"duration"`
 	Address     string         `json:"address"`
 	Description *string        `json:"description"`
+	Price       *float64       `json:"price"`
 }

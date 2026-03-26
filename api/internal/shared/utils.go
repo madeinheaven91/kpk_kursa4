@@ -10,7 +10,7 @@ import (
 )
 
 func LimitOffsetSearch(c *gin.Context) (int, int, string) {
-    var limit, offset int = 10, 0
+    var limit, offset int = -1, 0
     if c.Request.URL.Query().Has("limit") {
         limit, _ = strconv.Atoi(c.Request.URL.Query().Get("limit"))
     }
@@ -24,7 +24,8 @@ func LimitOffsetSearch(c *gin.Context) (int, int, string) {
 }
 
 var e164Regex = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
+var e164RegexFront = regexp.MustCompile(`^\+7 \(\d{3}\) \d{3}-\d{4}$`)
 
 func E164Phone(fl validator.FieldLevel) bool {
-    return e164Regex.MatchString(fl.Field().String())
+    return e164Regex.MatchString(fl.Field().String()) || e164RegexFront.MatchString(fl.Field().String())
 }

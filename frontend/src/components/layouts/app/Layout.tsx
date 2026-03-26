@@ -32,20 +32,20 @@ export function AppLayout() {
 				}
 
 				// Try to get account with existing token
-				let account = await Me();
+				let body = await Me();
 
 				// If Me() fails, try to refresh
-				if (!account) {
+				if (!body) {
 					console.error("Me failed, trying refresh...");
 					const refreshSuccess = await Refresh();
 
 					if (refreshSuccess) {
-						account = await Me();
+						body = await Me();
 					}
 				}
 
-				if (account && isMounted) {
-					dispatch(login(account));
+				if (body?.account && isMounted) {
+					dispatch(login(body));
 					setIsAuthenticated(true);
 				} else if (isMounted) {
 					// Both Me and Refresh failed, redirect to login
@@ -91,7 +91,7 @@ export function AppLayout() {
 	return (
 		<SidebarProvider>
 			<div className="flex h-screen w-screen">
-				<AppSidebar account={auth.account!} />
+				<AppSidebar auth={auth} />
 				<main className="flex-1 overflow-auto">
 					<Outlet context={auth satisfies LayoutContext} />
 				</main>

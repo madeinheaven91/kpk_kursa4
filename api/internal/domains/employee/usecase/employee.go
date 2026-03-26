@@ -22,10 +22,8 @@ func (u *UC) GetEmployee(ctx context.Context, id string) *models.Employee {
 	return u.repo.Get(ctx, id)
 }
 
-func (u *UC) GetEmployeeFull(ctx context.Context, id string) *models.Employee {
-	// TODO
-	// + []EmployeeOrder
-	return u.repo.Get(ctx, id)
+func (u *UC) GetEmployeeByAccount(ctx context.Context, id string) *models.Employee {
+	return u.repo.GetByAccount(ctx, id)
 }
 
 func (u *UC) GetAllEmployees(ctx context.Context, limit, offset int, filter employee.FilterParams) []models.Employee {

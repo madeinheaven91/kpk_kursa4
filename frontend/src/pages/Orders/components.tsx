@@ -27,6 +27,8 @@ import { parseISO } from "date-fns";
 import { DateRangePicker } from "@/components/date-range-picker";
 import type { Client } from "@/lib/api/clients";
 import type { DateRange } from "react-day-picker";
+import { permRoleToNumber } from "@/lib/utils";
+import type { Account } from "@/lib/api/accounts";
 
 const Pagination = ({ page, total, onPageChange }: {
 	page: number;
@@ -102,7 +104,7 @@ const FilterBar = ({ filter, onApply, onClear }: {
 	);
 };
 
-const OrdersTable = ({ orders, selectedOrder, handleSelectOrder, page, totalPages, total, onPageChange }: {
+const OrdersTable = ({ orders, selectedOrder, handleSelectOrder, page, totalPages, total, onPageChange, account }: {
 	orders: Order[];
 	selectedOrder: Order | null;
 	handleSelectOrder: (o: Order) => void;
@@ -110,6 +112,7 @@ const OrdersTable = ({ orders, selectedOrder, handleSelectOrder, page, totalPage
 	totalPages: number;
 	total: number;
 	onPageChange: (page: number) => void;
+    account: Account;
 }) => (
 	<Table>
 		<TableHeader>
@@ -119,6 +122,7 @@ const OrdersTable = ({ orders, selectedOrder, handleSelectOrder, page, totalPage
 				<TableHead>Длительность</TableHead>
 				<TableHead>Клиент</TableHead>
 				<TableHead>Адрес</TableHead>
+				{permRoleToNumber(account.role) > 1 && <TableHead>Цена</TableHead>}
 			</TableRow>
 		</TableHeader>
 		<TableBody>
@@ -143,14 +147,17 @@ const OrdersTable = ({ orders, selectedOrder, handleSelectOrder, page, totalPage
 							{raw.client?.name}
 						</TableCell>
 						<TableCell className={`max-w-[180px] truncate ${StatusClass(order.status)}`}>{order.address}</TableCell>
+						{permRoleToNumber(account.role) > 1 && 
+							<TableCell className={`max-w-[180px] truncate ${StatusClass(order.status)}`}>{order.price} Р.</TableCell>
+						}
 					</TableRow>
 				);
 			})}
-			<EmptyRows count={ORDER_PAGE_LIMIT - orders.length} startIndex={orders.length - 1} colSpan={5} />
+			<EmptyRows count={ORDER_PAGE_LIMIT - orders.length} startIndex={orders.length - 1} colSpan={6} />
 		</TableBody>
 		<TableFooter>
 			<TableRow>
-				<TableCell colSpan={3} className='pl-5'>Всего заказов: {total}</TableCell>
+				<TableCell colSpan={4} className='pl-5'>Всего заказов: {total}</TableCell>
 				<TableCell colSpan={2}>
 					{totalPages > 1 && <Pagination page={page} total={totalPages} onPageChange={onPageChange} />}
 				</TableCell>
@@ -164,6 +171,7 @@ const EmployeeRolesEditor = ({ employees, onChange }: {
     onChange: (employees: EmployeeRole[]) => void;
 }) => {
     const handleAdd = () => onChange([...employees, {} as EmployeeRole]);
+	// FIXME remove
     const handleRemove = (i: number) => onChange(employees.filter((_, idx) => idx !== i));
     const handleUpdate = (i: number, field: keyof EmployeeRole, value: any) => {
         const updated = employees.map((e, idx) => idx === i ? { ...e, [field]: value } : e);
@@ -174,7 +182,7 @@ const EmployeeRolesEditor = ({ employees, onChange }: {
     return (
         <div className='flex flex-col gap-2'>
             {employees.map((e, i) => (
-                <div key={i} className='flex gap-2 items-center relative z-10'> {/* ← relative + z-10 */}
+                <div key={i} className='flex gap-2 items-center relative z-10'>
                     <SearchCombobox<Employee>
 						query={e.employee?.name ?? ''}
                         placeholder="Начните вводить имя сотрудника..."

@@ -19,7 +19,8 @@ interface Order {
 	datetime: string,
 	duration: number,
 	address: string,
-	description: string
+	description: string,
+	price: number,
 }
 
 interface OrderRepr {
@@ -29,7 +30,8 @@ interface OrderRepr {
 	duration: string,
 	address: string,
 	description: string,
-	status: Status
+	price: number,
+	status: Status,
 }
 
 interface OrdersResponse {
@@ -71,9 +73,10 @@ function OrdersToRepr(orders: Order[]): OrderRepr[] {
 			id: order.id,
 			date: dateStr,
 			time,
-			duration: `${order.duration} ч.`,
+			duration: order.duration ? `${order.duration} ч.` : '-',
 			address: order.address,
             description: order.description,
+			price: order.price,
 			status
 		};
 	});
@@ -138,16 +141,18 @@ interface AddOrderForm {
 	duration?: number;
 	address: string;
 	description?: string;
+	price?: number;
 }
 
-function FinalizeAddForm(order: AddOrderForm) {
+function FinalizeAddForm(order: Partial<AddOrderForm>) {
     return {
         client_id: order.client_id,
         employees: order.employees?.map(e => ({ id: e.employee.id, role: e.role })) as EmployeeRoleTrunc[],
         datetime: order.datetime,
         duration: order.duration,
         address: order.address,
-        description: order.description
+        description: order.description,
+		price: order.price,
     }
 }
 
@@ -158,6 +163,7 @@ interface UpdateOrderForm {
 	duration?: number;
 	address?: string;
 	description?: string;
+	price?: number;
 }
 
 function OrderToUpdate(order: Partial<Order>): UpdateOrderForm {
@@ -166,7 +172,8 @@ function OrderToUpdate(order: Partial<Order>): UpdateOrderForm {
         datetime: order.datetime,
         duration: order.duration,
         address: order.address,
-        description: order.description
+        description: order.description,
+        price: order.price,
 	}
 }
 

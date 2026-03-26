@@ -3,6 +3,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/hooks/store";
 import { login, Login, type Account } from "@/lib/api/accounts";
+import type { Employee } from "@/lib/api/employees";
 import { AppRoutes } from "@/lib/routes";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +18,7 @@ function SignIn() {
 		e.preventDefault();
 		Login(loginInput, passwordInput)
 			.then((resp) => {
-				const body = resp.data as Account;
+				const body = resp.data.account as { account: Account, employee: Employee };
 				dispatch(login(body));
 				navigate(AppRoutes.getDashboardURL("/app"));
 			}).catch((err) => {

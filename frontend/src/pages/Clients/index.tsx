@@ -1,23 +1,27 @@
 import {
-	Loader2,
-	PencilIcon,
-	PlusIcon,
-	SaveIcon,
-	TrashIcon,
-	XIcon
+    Loader2,
+    PencilIcon,
+    PlusIcon,
+    SaveIcon,
+    TrashIcon,
+    XIcon
 } from "lucide-react";
 import React, { useEffect } from "react";
 
+import type { LayoutContext } from "@/components/layouts/app/Layout";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { formatPhoneNumber } from "@/lib/utils";
+import { formatPhoneNumber, permRoleToNumber } from "@/lib/utils";
+import { useOutletContext } from "react-router-dom";
 import { ClientsTable, DeleteDialog, OrdersTable, SearchBar } from "./components";
 import { useClientMutations, useClientOrders, useClients } from "./hooks";
 
 function ClientsPage() {
+	const auth = useOutletContext<LayoutContext>();
+	const account = auth.account!;
 	const {
 		clients,
 		total: clientsTotal,
@@ -84,7 +88,7 @@ function ClientsPage() {
 							onSearchChange={clientsSetSearch}
 							onSearch={clientsHandleSearch}
 							onClear={clientsHandleClearSearch} />
-						<Button onClick={handleAdd}><PlusIcon /> Добавить</Button>
+						{permRoleToNumber(auth.account?.role ?? "employee") > 0 && <Button onClick={handleAdd}><PlusIcon /> Добавить</Button>}
 					</div>
 					<div className='border-1 border-text shadow-md rounded-lg'>
 
@@ -115,8 +119,11 @@ function ClientsPage() {
 								<div className='flex gap-5 justify-between'>
 									<div className='flex gap-2'>
 										<h2 className='text-2xl mb-10'>{isEditing ? "Редактирование" : "Информация о клиенте"}</h2>
-										{!isEditing && <Button variant="outline" onClick={handleEdit}><PencilIcon />Редактировать</Button>}
+										{!isEditing &&
+											permRoleToNumber(account.role) > 0 &&
+											<Button variant="outline" onClick={handleEdit}><PencilIcon />Редактировать</Button>}
 										{isEditing &&
+											permRoleToNumber(account.role) > 0 &&
 											<>
 												<Button variant='outline' onClick={handleCancel}><XIcon />Отмена</Button>
 												<Button
@@ -132,7 +139,9 @@ function ClientsPage() {
 												</Button>
 											</>
 										}
-										<Button variant='destructive' onClick={() => setIsDeleteDialogOpen(true)}><TrashIcon /> Удалить</Button>
+										{permRoleToNumber(account.role) > 0 &&
+											<Button variant='destructive' onClick={() => setIsDeleteDialogOpen(true)}><TrashIcon /> Удалить</Button>
+										}
 									</div>
 									<Button variant='ghost' onClick={() => handleSelectClient(null)}><XIcon /></Button>
 								</div>

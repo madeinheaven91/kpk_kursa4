@@ -45,12 +45,11 @@ func SetupApp(c config.Config) App {
 	authService := services.NewService(c.Server.SecretKey)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{"http://localhost:4000"},
 		AllowCredentials: true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-	}), // services.Throttling(),
-	)
+	}))
 
 	v1 := router.Group("/api/v1")
 
@@ -60,7 +59,10 @@ func SetupApp(c config.Config) App {
 		sRepo := accRepo.NewSessionRepo(db)
 		authUC := accUC.NewAuthUC(accrepo, sRepo, c.Server.SecretKey)
 		accUC := accUC.NewAccountUC(accrepo)
-		handler := accHTTP.NewHandler(accUC, authUC)
+
+		empRepo := empRepo.NewRepo(db)
+		empUC := empUC.NewUC(empRepo)
+		handler := accHTTP.NewHandler(accUC, authUC, empUC)
 		handler.SetupRouter(v1, authService)
 	}
 

@@ -1,3 +1,4 @@
+import type { LayoutContext } from "@/components/layouts/app/Layout";
 import { SearchCombobox } from "@/components/search-combobox";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -6,8 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import type { Client } from "@/lib/api/clients";
 import type { EmployeeRole } from "@/lib/api/employees";
-import { OrdersToRepr, StatusClass } from "@/lib/api/orders";
+import { OrdersToRepr } from "@/lib/api/orders";
 import { ApiRoutes } from "@/lib/routes";
+import { permRoleToNumber } from "@/lib/utils";
 import axios from "axios";
 import {
 	Loader2,
@@ -18,10 +20,13 @@ import {
 	XIcon,
 } from "lucide-react";
 import React, { useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import { DateTimePicker, DeleteDialog, EmployeeRolesEditor, FilterBar, OrdersTable } from "./components";
 import { useOrderMutations, useOrders } from "./hooks";
 
 function OrdersPage() {
+	const auth = useOutletContext<LayoutContext>();
+	const account = auth.account!;
 	const {
 		orders,
 		total,
@@ -68,9 +73,9 @@ function OrdersPage() {
 			<div className='grid grid-cols-2 gap-10'>
 				{/* Таблица заказов */}
 				<div className='flex flex-col gap-5'>
-					<div className='flex flex-row gap-5 items-center justify-between'>
+					<div className='flex flex-row gap-5 items-end justify-between align-baseline'>
 						<FilterBar filter={filter} onApply={handleApplyFilter} onClear={handleClearFilter} />
-						<Button onClick={handleAdd}><PlusIcon /> Добавить</Button>
+						{permRoleToNumber(auth.account?.role ?? "employee") > 0 && <Button onClick={handleAdd}><PlusIcon /> Добавить</Button>}
 					</div>
 					<div className='border-1 border-text shadow-md rounded-lg'>
 						{loading ?
@@ -87,7 +92,8 @@ function OrdersPage() {
 									page={page}
 									totalPages={pageTotal}
 									total={total}
-									onPageChange={setPage} />
+									onPageChange={setPage}
+									account={account} />
 						}
 					</div>
 				</div>
@@ -100,10 +106,12 @@ function OrdersPage() {
 								<div className='flex gap-5 justify-between'>
 									<div className='flex gap-2 flex-wrap'>
 										<h2 className='text-2xl mb-10'>{isEditing ? "Редактирование" : "Информация о заказе"}</h2>
-										{!isEditing && (
+										{!isEditing &&
+											permRoleToNumber(account.role) > 0 &&
 											<Button variant="outline" onClick={handleEdit}><PencilIcon />Редактировать</Button>
-										)}
-										{isEditing && (
+										}
+										{isEditing &&
+											permRoleToNumber(account.role) > 0 &&
 											<>
 												<Button variant='outline' onClick={handleCancel}><XIcon />Отмена</Button>
 												<Button onClick={handleSave} disabled={isSaving}>
@@ -111,8 +119,10 @@ function OrdersPage() {
 													Сохранить
 												</Button>
 											</>
-										)}
-										<Button variant='destructive' onClick={() => setIsDeleteDialogOpen(true)}><TrashIcon /> Удалить</Button>
+										}
+										{permRoleToNumber(account.role) > 0 &&
+											<Button variant='destructive' onClick={() => setIsDeleteDialogOpen(true)}><TrashIcon /> Удалить</Button>
+										}
 									</div>
 									<Button variant='ghost' onClick={() => handleSelectOrder(null)}><XIcon /></Button>
 								</div>
@@ -127,7 +137,26 @@ function OrdersPage() {
 										{{ upcoming: 'Предстоит', ongoing: 'В процессе', done: 'Завершён' }[repr.status]}
 									</span>
 								</div>
-								<p className='text-sm opacity-50 mb-4'>ID: {selectedOrder.id}</p>
+
+								{/* Price */}
+								{permRoleToNumber(account.role) > 1 &&
+								<div className='mb-3'>
+									<p className='text-sm opacity-60 mb-1'>Цена</p>
+									{isEditing ?
+										<div className='flex gap-2 items-center'>
+											<Input
+												type='text'
+												placeholder='Цена'
+												value={editedOrder.price ?? ''}
+												onChange={e => handleFieldChange('price', e.target.value ? Number(e.target.value) : undefined)}
+												className='md:text-xl py-5 w-32' />
+											<p className='text-xl'>Р.</p>
+										</div>
+										:
+										<p className='text-2xl'>{selectedOrder.price ? `${selectedOrder.price} р.` : "Не указана"}</p>
+									}
+								</div>
+								}
 
 								{/* Datetime */}
 								<div className='mb-3'>
@@ -139,22 +168,23 @@ function OrdersPage() {
 											onChange={e => handleFieldChange('datetime', e.target.value)}
 											className='md:text-xl py-5' />
 										:
-										<p className={`text-2xl ${StatusClass(repr.status)}`}>{repr.date} в {repr.time}</p>
+										<p className={`text-2xl`}>{repr.date} в {repr.time}</p>
 									}
 								</div>
 
 								{/* Duration */}
 								<div className='mb-3'>
-									<p className='text-sm opacity-60 mb-1'>Длительность (ч.)</p>
+									<p className='text-sm opacity-60 mb-1'>Длительность</p>
 									{isEditing ?
 										<Input
 											type='number'
 											min={1}
-											value={(editedOrder as { duration?: number }).duration ?? ''}
+											placeholder='Длительность'
+											value={editedOrder.duration ?? ''}
 											onChange={e => handleFieldChange('duration', e.target.value ? Number(e.target.value) : undefined)}
 											className='md:text-xl py-5 w-32' />
 										:
-										<p className={`text-xl ${StatusClass(repr.status)}`}>{repr.duration}</p>
+										<p className={`text-xl`}>{repr.duration}</p>
 									}
 								</div>
 
@@ -163,18 +193,8 @@ function OrdersPage() {
 								{/* Client */}
 								<div className='mb-3'>
 									<p className='text-sm opacity-60 mb-1'>Клиент</p>
-									{isEditing ?
-										<Input
-											placeholder="UUID клиента"
-											value={(editedOrder as { client_id?: string }).client_id || selectedOrder.client?.id || ''}
-											onChange={e => handleFieldChange('client_id', e.target.value)}
-											className='md:text-xl py-5' />
-										:
-										<>
-											<p className='text-xl'>{selectedOrder.client?.name || <span className='opacity-50'>Не указан</span>}</p>
-											{selectedOrder.client && <p className='text-sm opacity-50'>{selectedOrder.client.phone}</p>}
-										</>
-									}
+									<p className='text-xl'>{selectedOrder.client?.name || <span className='opacity-50'>Не указан</span>}</p>
+									{selectedOrder.client && <p className='text-sm opacity-50'>{selectedOrder.client.phone}</p>}
 								</div>
 
 								{/* Address */}
@@ -186,7 +206,7 @@ function OrdersPage() {
 											onChange={e => handleFieldChange('address', e.target.value)}
 											placeholder="Адрес"
 											className='md:text-xl py-5' />
-										: <p className={`text-xl ${StatusClass(repr.status)}`}>{selectedOrder.address}</p>
+										: <p className={`text-xl`}>{selectedOrder.address}</p>
 									}
 								</div>
 
@@ -263,6 +283,15 @@ function OrdersPage() {
 											onSelect={(client: Client) => handleFieldChange('client_id', client?.id ?? '')} />
 									</Field>
 									<Field>
+										<FieldLabel className='text-xl'>Цена</FieldLabel>
+										<Input
+											type='text'
+											value={newOrder.price ?? ''}
+											onChange={e => handleFieldChange('price', e.target.value ? Number(e.target.value) : undefined)}
+											placeholder="Цена"
+											className='md:text-xl py-6 w-32' />
+									</Field>
+									<Field>
 										<FieldLabel className='text-xl'>
 											Дата и время <span className='text-red-500'>*</span>
 										</FieldLabel>
@@ -277,7 +306,7 @@ function OrdersPage() {
 											min={1}
 											value={newOrder.duration ?? ''}
 											onChange={e => handleFieldChange('duration', e.target.value ? Number(e.target.value) : undefined)}
-											placeholder="Часов"
+											placeholder="Длительность"
 											className='md:text-xl py-6 w-32' />
 									</Field>
 									<Field>

@@ -12,8 +12,8 @@ type Employee struct {
 
 type AddEmployeeForm struct {
 	AccountLogin *string `json:"account_login"`
-	Name         string `json:"name" binding:"required"`
-	Phone        string `json:"phone" binding:"required,e164"`
+	Name         string  `json:"name" binding:"required"`
+	Phone        string  `json:"phone" binding:"required,e164"`
 }
 
 func (f AddEmployeeForm) ToEmployee() *Employee {
@@ -26,10 +26,10 @@ func (f AddEmployeeForm) ToEmployee() *Employee {
 
 func (e *Employee) Update(form UpdateEmployeeForm) {
 	if form.AccountLogin != "" {
-        e.AccountLogin = &form.AccountLogin
+		e.AccountLogin = &form.AccountLogin
 	}
 	if form.Name != "" {
-        e.Name = form.Name
+		e.Name = form.Name
 	}
 	if form.Phone != "" {
 		e.Phone = form.Phone
@@ -38,6 +38,6 @@ func (e *Employee) Update(form UpdateEmployeeForm) {
 
 type UpdateEmployeeForm struct {
 	AccountLogin string `json:"account_login"`
-	Name  string `json:"name"`
-	Phone string `json:"phone" binding:"e164"`
+	Name         string `json:"name"`
+	Phone        string `json:"phone" binding:"e164"`
 }

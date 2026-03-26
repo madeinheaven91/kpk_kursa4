@@ -55,7 +55,7 @@ func (h Handler) GetAllEmployees(c *gin.Context) {
 func (h Handler) GetEmployeeFull(c *gin.Context) {
 	id := c.Param("id")
 
-	employee := h.empUC.GetEmployeeFull(c.Request.Context(), id)
+	employee := h.empUC.GetEmployee(c.Request.Context(), id)
 	if employee == nil {
 		c.AbortWithStatusJSON(404, errors.NewError("employee not found"))
 		return

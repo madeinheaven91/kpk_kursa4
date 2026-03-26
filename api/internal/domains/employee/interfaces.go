@@ -12,6 +12,7 @@ type FilterParams struct {
 
 type Repo interface {
 	Get(ctx context.Context, id string) *models.Employee
+	GetByAccount(ctx context.Context, accountID string) *models.Employee
 	GetAll(ctx context.Context, limit, offset int, filter FilterParams) []models.Employee
 	Add(ctx context.Context, client *models.Employee) error
 	Delete(ctx context.Context, id string) error
@@ -22,7 +23,7 @@ type Repo interface {
 
 type UC interface {
 	GetEmployee(ctx context.Context, id string) *models.Employee
-	GetEmployeeFull(ctx context.Context, id string) *models.Employee
+	GetEmployeeByAccount(ctx context.Context, accountID string) *models.Employee
 	GetAllEmployees(ctx context.Context, limit, offset int, filter FilterParams) []models.Employee
     AddEmployee(ctx context.Context, client *models.AddEmployeeForm) (*models.Employee, error)
     UpdateEmployee(ctx context.Context, client *models.Employee) error

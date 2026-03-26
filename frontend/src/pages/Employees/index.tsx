@@ -145,6 +145,7 @@ function EmployeesPage() {
 											placeholder="Имя"
 											className='md:text-4xl py-6' />
 										<SearchCombobox<Account>
+											query={''}
 											placeholder="Начните вводить логин"
 											onSearch={async (query) =>
 												await axios.get(ApiRoutes.getAccountsURL(), {

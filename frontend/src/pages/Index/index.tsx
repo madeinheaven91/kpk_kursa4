@@ -9,11 +9,6 @@ function Index() {
 
 	useEffect(() => {
 			navigate(AppRoutes.getDashboardURL("/app"));
-		// if (auth.account === undefined) {
-		// 	navigate(AppRoutes.getSignInURL());
-		// } else {
-		// 	navigate(AppRoutes.getDashboardURL("/app"));
-		// }
 	}, [auth.account, navigate]);
 
 	return <></>

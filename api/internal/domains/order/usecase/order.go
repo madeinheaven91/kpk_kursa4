@@ -38,16 +38,7 @@ func (u *OrderUC) GetAll(ctx context.Context, limit, offset int, filter order.Fi
 	res := make([]models.OrderFull, len(orders))
 	for i, order := range orders {
 		employees := u.repo.GetEmployees(ctx, order.ID)
-		res[i] = models.OrderFull{
-			ID:          order.ID,
-			Client:      order.Client,
-			Employees:   employees,
-			Datetime:    order.Datetime,
-			Duration:    order.Duration,
-			Address:     order.Address,
-			Description: order.Description,
-		}
-
+		res[i] = order.ToFull(employees);
 	}
 	return res
 }

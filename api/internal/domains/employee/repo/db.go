@@ -41,6 +41,15 @@ func (r Repo) Get(ctx context.Context, id string) *models.Employee {
     return &res
 }
 
+func (r Repo) GetByAccount(ctx context.Context, login string) *models.Employee {
+	var res models.Employee
+	err := r.db.WithContext(ctx).Joins("Account").Where(`"Account".login = ?`, login).First(&res).Error
+	if err != nil {
+		return nil
+	}
+    return &res
+}
+
 func (r Repo) Add(ctx context.Context, emp *models.Employee) error {
 	return gorm.G[models.Employee](r.db).Create(ctx, emp)
 }
@@ -51,9 +60,13 @@ func (r Repo) Delete(ctx context.Context, id string) error {
 }
 
 func (r Repo) Update(ctx context.Context, emp *models.Employee) error {
-	_, err := gorm.G[models.Employee](r.db).Where("id = ?", emp.ID).Updates(ctx, *emp)
+	_, err := gorm.G[models.Employee](r.db).
+		Where("id = ?", emp.ID).
+        Select("account_login", "name", "phone").
+		Updates(ctx, *emp)
 	return err
 }
+
 
 func (r Repo) Total(ctx context.Context, filter employee.FilterParams) (int64, error) {
 	base := gorm.G[models.Employee](r.db).Offset(0)

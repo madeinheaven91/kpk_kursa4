@@ -1,7 +1,5 @@
 FROM golang:1.25.7-bookworm
 
-ENV GOPROXY=direct
-
 WORKDIR /app
 
 COPY go.mod go.sum ./

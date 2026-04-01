@@ -45,7 +45,7 @@ func SetupApp(c config.Config) App {
 	authService := services.NewService(c.Server.SecretKey)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:4000"},
+		AllowOrigins:     []string{"http://localhost:4000", "http://localhost:5173"},
 		AllowCredentials: true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
